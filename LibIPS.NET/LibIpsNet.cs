@@ -127,181 +127,181 @@ namespace LibIpsNet
 
         //There are no known cases where LIPS wins over libips.
 
-        public ipserror Create(Stream source, Stream target, Stream patch)
+        public ipserror Create(List<byte> source, List<byte> target, out List<byte> patch)
         {
-            throw new NotImplementedException();
+            int sourcelen = source.Count;
+            int targetlen = target.Count;
 
-            uint sourcelen = (uint)source.Length;
-            uint targetlen = (uint)target.Length;
             bool sixteenmegabytes = false;
 
-            using (BinaryReader sourceReader = new BinaryReader(source), patchReader = new BinaryReader(patch))
+
+            if (sourcelen > 16777216)
             {
-                using (BinaryWriter targetWriter = new BinaryWriter(target))
+                sourcelen = 16777216;
+                sixteenmegabytes = true;
+            }
+            if (targetlen > 16777216)
+            {
+                targetlen = 16777216;
+                sixteenmegabytes = true;
+            }
+
+            int offset = 0;
+            List<byte> output = new List<byte>();
+
+            Write8((byte)'P', output);
+            Write8((byte)'A', output);
+            Write8((byte)'T', output);
+            Write8((byte)'C', output);
+            Write8((byte)'H', output);
+
+            int lastknownchange = 0;
+            while (offset < targetlen)
+            {
+                while (offset < sourcelen && (offset < sourcelen ? source[offset] : 0) == target[offset]) offset++;
+
+                //check how much we need to edit until it starts getting similar
+                int thislen = 0;
+                int consecutiveunchanged = 0;
+                thislen = lastknownchange - offset;
+                if (thislen < 0) thislen = 0;
+
+                while (true)
                 {
-
-                    if (sourcelen > 16777216)
+                    int thisbyte = offset + thislen + consecutiveunchanged;
+                    if (thisbyte < sourcelen && (thisbyte < sourcelen ? source[thisbyte] : 0) == target[thisbyte]) consecutiveunchanged++;
+                    else
                     {
-                        sourcelen = 16777216;
-                        sixteenmegabytes = true;
+                        thislen += consecutiveunchanged + 1;
+                        consecutiveunchanged = 0;
                     }
-                    if (targetlen > 16777216)
+                    if (consecutiveunchanged >= 6 || thislen >= 65536) break;
+                }
+
+                //avoid premature EOF
+                if (offset == EndOfFile)
+                {
+                    offset--;
+                    thislen++;
+                }
+
+                lastknownchange = offset + thislen;
+                if (thislen > 65535) thislen = 65535;
+                if (offset + thislen > targetlen) thislen = targetlen - offset;
+                if (offset == targetlen) continue;
+
+                //check if RLE here is worthwhile
+                int byteshere = 0;
+
+                for (byteshere = 0; byteshere < thislen && target[offset] == target[offset + byteshere]; byteshere++) { }
+
+
+                if (byteshere == thislen)
+                {
+                    int thisbyte = target[offset];
+                    int i = 0;
+
+                    while (true)
                     {
-                        targetlen = 16777216;
-                        sixteenmegabytes = true;
-                    }
-                    uint offset = 0;
-                    uint outbuflen = 4096;
-                    uint outlen = 0;
-
-                    targetWriter.Write(PatchText);
-                    int lastknownchange = 0;
-                    while (offset < targetlen)
-                    {
-                        source.Seek(offset, 0);
-                        target.Seek(offset, 0);
-                        while (offset < sourcelen && (offset < sourcelen ? source.ReadByte() : 0) == target.ReadByte()) offset++;
-
-                        //check how much we need to edit until it starts getting similar
-                        int thislen = 0;
-                        int consecutiveunchanged = 0;
-                        thislen = lastknownchange - (int)offset;
-                        if (thislen < 0) thislen = 0;
-
-                        while (true)
+                        int pos = offset + byteshere + i - 1;
+                        if (pos >= targetlen || target[pos] != thisbyte || byteshere + i > 65535) break;
+                        if (pos >= sourcelen || (pos < sourcelen ? source[pos] : 0) != thisbyte)
                         {
-                            uint thisbyte = offset + (uint)thislen + (uint)consecutiveunchanged;
-                            source.Seek(thisbyte, 0);
-                            target.Seek(thisbyte, 0);
-                            if (thisbyte < sourcelen && (thisbyte < sourcelen ? source.ReadByte() : 0) == target.ReadByte()) consecutiveunchanged++;
-                            else
-                            {
-                                thislen += consecutiveunchanged + 1;
-                                consecutiveunchanged = 0;
-                            }
-                            if (consecutiveunchanged >= 6 || thislen >= 65536) break;
+                            byteshere += i;
+                            thislen += i;
+                            i = 0;
                         }
-
-                        //avoid premature EOF
-                        if (offset == 0x454F46)
-                        {
-                            offset--;
-                            thislen++;
-                        }
-
-                        lastknownchange = (int)offset + thislen;
-                        if (thislen > 65535) thislen = 65535;
-                        if (offset + thislen > targetlen) thislen = (int)(targetlen - offset);
-                        if (offset == targetlen) continue;
-
-                        //check if RLE here is worthwhile
-                        int byteshere=0;
-
-                        source.Seek(offset, 0);
-                        target.Seek(offset + byteshere, 0);
-                        for (byteshere = 0; byteshere < thislen && target.ReadByte() == target.ReadByte(); byteshere++) { }
-
-                        if (byteshere == thislen)
-                        {
-                            target.Seek(offset, 0);
-                            int thisbyte = target.ReadByte();
-                            int i = 0;
-
-                            while (true)
-                            {
-                                uint pos = offset + (uint)byteshere + (uint)i - 1;
-                                source.Seek(pos, 0);
-                                target.Seek(pos, 0);
-                                if (pos >= targetlen || target.ReadByte() != thisbyte || byteshere + i > 65535) break;
-                                if (pos >= sourcelen || (pos < sourcelen ? source.ReadByte() : 0) != thisbyte)
-                                {
-                                    byteshere += i;
-                                    thislen += i;
-                                    i = 0;
-                                }
-                                i++;
-                            }
-
-                        }
-                        if ((byteshere > 8 - 5 && byteshere == thislen) || byteshere > 8)
-                        {
-
-                            // TODO: Fix this: targetWriter.Write(offset);
-
-                            // TODO: Fix below. They are little-endian.
-                            // targetWriter.Write(
-                            // write16(byteshere);
-                            // write8(target[offset]);
-                            // offset += byteshere;
-                        }
-                        else {
-                            //check if we'd gain anything from ending the block early and switching to RLE
-                             byteshere = 0;
-                             int stopat = 0;
-                            /* TODO: rewrite below:
-                             while (stopat + byteshere < thislen)
-                             {
-                                 if (target[offset + stopat] == target[offset + stopat + byteshere]) byteshere++;
-                                 else
-                                 {
-                                     stopat += byteshere;
-                                     byteshere = 0;
-                                 }
-                                 if (byteshere > 8 + 5 || //rle-worthy despite two ips headers
-                                         (byteshere > 8 && stopat + byteshere == thislen) || //rle-worthy at end of data
-                                         (byteshere > 8 && !memcmp(&target[offset + stopat + byteshere], &target[offset + stopat + byteshere + 1], 9 - 1)))//rle-worthy before another rle-worthy
-                                 {
-                                     if (stopat) thislen = stopat;
-                                     break;//we don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
-                                 } 
-                             
-                             
-                             	  //don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes
-			                     if (offset+thislen!=targetlen)
-                                 {
-                                 while (offset+thislen-1<sourcelen && target[offset+thislen-1]==(offset+thislen-1<sourcelen?source[offset+thislen-1]:0)) thislen--;
-                                 }
-                               			if (thislen>3 && !memcmp(&target[offset], &target[offset+1], thislen-2))
-			{
-				write24(offset);
-				write16(0);
-				write16(thislen);
-				write8(target[offset]);
-			}
-			else
-			{
-				write24(offset);
-				write16(thislen);
-				int i;
-				for (i=0;i<thislen;i++)
-				{
-					write8(target[offset+i]);
-				}
-			}
-			offset+=thislen;
- 
-                             
-                             */
-
-
-                             }
-                        }
-                    targetWriter.Write("EOF");
-                    // TODO: Rewrite this line:
-                    // if (sourcelen>targetlen) write24(targetlen);
-
-                    	// patchmem->ptr=out;
-	// patchmem->len=outlen;
-
-                    if (sixteenmegabytes) return ipserror.ips_16MB;
-                    if (outlen == 8) return ipserror.ips_identical;
-                    return ipserror.ips_ok;
- 
+                        i++;
                     }
 
                 }
+                if ((byteshere > 8 - 5 && byteshere == thislen) || byteshere > 8)
+                {
+                    Write24(offset, output);
+                    Write16(0, output);
+                    Write16(byteshere, output);
+                    Write8(target[offset], output);
+                    offset += byteshere;
+                }
+                else
+                {
+                    //check if we'd gain anything from ending the block early and switching to RLE
+                    byteshere = 0;
+                    int stopat = 0;
 
+                    /* TODO: rewrite below: */
+                    while (stopat + byteshere < thislen)
+                    {
+                        if (target[offset + stopat] == target[offset + stopat + byteshere]) byteshere++;
+                        else
+                        {
+                            stopat += byteshere;
+                            byteshere = 0;
+                        }
+                        // The code !memcmp(&target[offset + stopat + byteshere], &target[offset + stopat + byteshere + 1], 9 - 1) in C is replaced by the code in LINQ:
+                        // !target.Skip(offset + stopat + byteshere).Take( 9 - 1).ToArray().SequenceEqual(target.Skip(offset + stopat + byteshere + 1).Take(9 - 1).ToArray())
+                        if (byteshere > 8 + 5 || //rle-worthy despite two ips headers
+                                (byteshere > 8 && stopat + byteshere == thislen) || //rle-worthy at end of data
+                                (byteshere > 8 && !target.Skip(offset + stopat + byteshere).Take(9 - 1).SequenceEqual(target.Skip(offset + stopat + byteshere + 1).Take(9 - 1))))//rle-worthy before another rle-worthy
+                        {
+                            if (stopat != 0) thislen = stopat;
+                            break;//we don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
+                        }
+                    }
+
+
+                    //don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes
+                    if (offset + thislen != targetlen)
+                    {
+                        while (offset + thislen - 1 < sourcelen && target[offset + thislen - 1] == (offset + thislen - 1 < sourcelen ? source[offset + thislen - 1] : 0)) thislen--;
+                    }
+                    if (thislen > 3 && target.Skip(offset).Take(thislen - 2).SequenceEqual(target.Skip(offset + 1).Take(thislen - 2)))
+                    {
+                        Write24(offset, output);
+                        Write16(0, output);
+                        Write16(thislen, output);
+                        Write8(target[offset], output);
+                    }
+                    else
+                    {
+                        Write24(offset, output);
+                        Write16(thislen, output);
+                        int i;
+                        for (i = 0; i < thislen; i++)
+                        {
+                            Write8(target[offset + i], output);
+                        }
+                    }
+                    offset += thislen;
+
+                }
             }
+
+
+
+            Write8((byte)'E', output);
+            Write8((byte)'O', output);
+            Write8((byte)'F', output);
+
+            if (sourcelen > targetlen) Write24(targetlen, output);
+
+            patch = output;
+
+            if (sixteenmegabytes) return ipserror.ips_16MB;
+            if (output.Count == 8) return ipserror.ips_identical;
+            return ipserror.ips_ok;
+
+        }
+
+        public static byte[] ReadFully(Stream input)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                input.CopyTo(ms);
+                return ms.ToArray();
+            }
+        }
+
 
         private uint ReadUInt24(this BinaryReader reader)
         {
@@ -319,6 +319,21 @@ namespace LibIpsNet
             {
                 return 0u;
             }
+        }
+        private void Write8(byte value, List<byte> list)
+        {
+            list.Add(value);
+        }
+        private void Write16(int value, List<byte> list)
+        {
+            Write8((byte)(value >> 8), list);
+            Write8((byte)(value), list);
+        }
+        private void Write24(int value, List<byte> list)
+        {
+            Write8((byte)(value >> 16), list);
+            Write8((byte)(value >> 8), list);
+            Write8((byte)(value), list);
         }
 
 
