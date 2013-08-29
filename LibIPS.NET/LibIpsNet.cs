@@ -11,36 +11,36 @@ namespace LibIpsNet
         const string PatchText = "PATCH";
         const int EndOfFile = 0x454F46;
 
-        enum ipserror
+        enum IpsError
         {
-            ips_ok,//Patch applied or created successfully.
-            ips_notthis,//The patch is most likely not intended for this ROM.
-            ips_scrambled,//The patch is technically valid, but seems scrambled or malformed.
-            ips_invalid,//The patch is invalid.
-            ips_16MB,//One or both files is bigger than 16MB. The IPS format doesn't support that. The created
+            IpsOk,//Patch applied or created successfully.
+            IpsNotThis,//The patch is most likely not intended for this ROM.
+            IpsScrambled,//The patch is technically valid, but seems scrambled or malformed.
+            IpsInvalid,//The patch is invalid.
+            Ips16MB,//One or both files is bigger than 16MB. The IPS format doesn't support that. The created
             //patch contains only the differences to that point.
-            ips_identical,//The input buffers are identical.
+            IpsIdentical,//The input buffers are identical.
         };
 
-        public struct ipsstudy
+        public struct IpsStudy
         {
-            public ipserror error;
-            public long outlen_min;
-            public long outlen_max;
-            public long outlen_min_mem;
+            public IpsError Error;
+            public long OutlenMin;
+            public long OutlenMax;
+            public long OutlenMinMem;
         };
-        public ipserror Study(Stream patch, ipsstudy study)
+        public IpsError Study(Stream patch, IpsStudy study)
         {
             // Code below needs a rewrite.
             throw new NotImplementedException();
 
-            study.error = ipserror.ips_invalid;
-            if (patch.Length < 8) return ipserror.ips_invalid;
+            study.Error = IpsError.IpsInvalid;
+            if (patch.Length < 8) return IpsError.IpsInvalid;
 
             using (var patchReader = new BinaryReader(patch))
             {
                 // If 'PATCH' text was not found, return IPS was invalid error.
-                if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) return ipserror.ips_invalid;
+                if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) return IpsError.IpsInvalid;
 
                 int offset = ReadInt24(patchReader);
                 int outlen = 0;
@@ -66,18 +66,18 @@ namespace LibIpsNet
                     if (offset < lastoffset) w_scrambled = true;
                     lastoffset = offset;
                     if (thisout > outlen) outlen = thisout;
-                    if (patch.Position >= patch.Length) return ipserror.ips_invalid;
+                    if (patch.Position >= patch.Length) return IpsError.IpsInvalid;
 
                     offset = ReadInt24(patchReader);
 
                 }
-                study.outlen_min_mem = outlen;
-                study.outlen_max = 0xFFFFFFFF;
+                study.OutlenMinMem = outlen;
+                study.OutlenMax = 0xFFFFFFFF;
 
                 if (patch.Position == patch.Length)
                 {
                     int truncate = ReadInt24(patchReader);
-                    study.outlen_max = truncate;
+                    study.OutlenMax = truncate;
                     if (outlen > truncate)
                     {
                         outlen = truncate;
@@ -85,21 +85,21 @@ namespace LibIpsNet
                     }
 
                 }
-                if (patch.Position != patch.Length) return ipserror.ips_invalid;
+                if (patch.Position != patch.Length) return IpsError.IpsInvalid;
 
-                study.error = ipserror.ips_ok;
-                if (w_notthis) study.error = ipserror.ips_notthis;
-                if (w_scrambled) study.error = ipserror.ips_scrambled;
-                return study.error;
+                study.Error = IpsError.IpsOk;
+                if (w_notthis) study.Error = IpsError.IpsNotThis;
+                if (w_scrambled) study.Error = IpsError.IpsScrambled;
+                return study.Error;
 
             }
 
         }
-        public ipserror ApplyStudy(Stream patch, ipsstudy study, Stream inFile, Stream outFile)
+        public IpsError ApplyStudy(Stream patch, IpsStudy study, Stream inFile, Stream outFile)
         {
             throw new NotImplementedException();
-            study.error = ipserror.ips_invalid;
-            if (patch.Length < 8) return ipserror.ips_invalid;
+            study.Error = IpsError.IpsInvalid;
+            if (patch.Length < 8) return IpsError.IpsInvalid;
 
         }
 
@@ -129,29 +129,29 @@ namespace LibIpsNet
         //It is also known that I win in some other situations. I didn't bother checking which, though.
 
         //There are no known cases where LIPS wins over libips.
-        public ipserror Create(string source, string target, string patch)
+        public IpsError Create(string source, string target, string patch)
         { 
             using(FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create)) {
                 return Create(sourceStream, targetStream, patchStream);
             }
         }
-        public ipserror Create(FileStream source, FileStream target, FileStream patch)
+        public IpsError Create(FileStream source, FileStream target, FileStream patch)
         {
             return Create(source, target, patch);
         }
-        public ipserror Create(Stream source, Stream target, Stream patch)
+        public IpsError Create(Stream source, Stream target, Stream patch)
         {
             List<byte> sourceList = new List<byte>(ReadFully(source));
             List<byte> targetList = new List<byte>(ReadFully(target));
             List<byte> patchList;
 
-            ipserror result = Create(sourceList, targetList, out patchList);
+            IpsError result = Create(sourceList, targetList, out patchList);
 
             patch.Write(patchList.ToArray(), 0, patchList.Count);
 
             return result;
         }
-        public ipserror Create(List<byte> source, List<byte> target, out List<byte> patch)
+        public IpsError Create(List<byte> source, List<byte> target, out List<byte> patch)
         {
             int sourcelen = source.Count;
             int targetlen = target.Count;
@@ -310,9 +310,9 @@ namespace LibIpsNet
 
             patch = output;
 
-            if (sixteenmegabytes) return ipserror.ips_16MB;
-            if (output.Count == 8) return ipserror.ips_identical;
-            return ipserror.ips_ok;
+            if (sixteenmegabytes) return IpsError.Ips16MB;
+            if (output.Count == 8) return IpsError.IpsIdentical;
+            return IpsError.IpsOk;
 
         }
 
