@@ -129,7 +129,28 @@ namespace LibIpsNet
         //It is also known that I win in some other situations. I didn't bother checking which, though.
 
         //There are no known cases where LIPS wins over libips.
+        public ipserror Create(string source, string target, string patch)
+        { 
+            using(FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create)) {
+                return Create(sourceStream, targetStream, patchStream);
+            }
+        }
+        public ipserror Create(FileStream source, FileStream target, FileStream patch)
+        {
+            return Create(source, target, patch);
+        }
+        public ipserror Create(Stream source, Stream target, Stream patch)
+        {
+            List<byte> sourceList = new List<byte>(ReadFully(source));
+            List<byte> targetList = new List<byte>(ReadFully(target));
+            List<byte> patchList;
 
+            ipserror result = Create(sourceList, targetList, out patchList);
+
+            patch.Write(patchList.ToArray(), 0, patchList.Count);
+
+            return result;
+        }
         public ipserror Create(List<byte> source, List<byte> target, out List<byte> patch)
         {
             int sourcelen = source.Count;
