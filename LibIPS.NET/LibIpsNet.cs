@@ -9,7 +9,7 @@ namespace LibIpsNet
     public class IpsLibNet
     {
         const string PatchText = "PATCH";
-        const uint EndOfFile = 0x454F46;
+        const int EndOfFile = 0x454F46;
 
         enum ipserror
         {
@@ -25,12 +25,15 @@ namespace LibIpsNet
         public struct ipsstudy
         {
             public ipserror error;
-            public uint outlen_min;
-            public uint outlen_max;
-            public uint outlen_min_mem;
+            public long outlen_min;
+            public long outlen_max;
+            public long outlen_min_mem;
         };
         public ipserror Study(Stream patch, ipsstudy study)
         {
+            // Code below needs a rewrite.
+            throw new NotImplementedException();
+
             study.error = ipserror.ips_invalid;
             if (patch.Length < 8) return ipserror.ips_invalid;
 
@@ -39,10 +42,10 @@ namespace LibIpsNet
                 // If 'PATCH' text was not found, return IPS was invalid error.
                 if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) return ipserror.ips_invalid;
 
-                uint offset = ReadUInt24(patchReader);
-                uint outlen = 0;
-                uint thisout = 0;
-                uint lastoffset = 0;
+                int offset = ReadInt24(patchReader);
+                int outlen = 0;
+                int thisout = 0;
+                int lastoffset = 0;
                 bool w_scrambled = false;
                 bool w_notthis = false;
 
@@ -52,12 +55,12 @@ namespace LibIpsNet
 
                     if (size == 0)
                     {
-                        thisout = offset + (uint)patchReader.ReadInt16();
+                        thisout = offset + patchReader.ReadInt16();
                         patchReader.ReadByte();
                     }
                     else
                     {
-                        thisout = offset + (uint)size;
+                        thisout = offset + size;
 
                     }
                     if (offset < lastoffset) w_scrambled = true;
@@ -65,7 +68,7 @@ namespace LibIpsNet
                     if (thisout > outlen) outlen = thisout;
                     if (patch.Position >= patch.Length) return ipserror.ips_invalid;
 
-                    offset = ReadUInt24(patchReader);
+                    offset = ReadInt24(patchReader);
 
                 }
                 study.outlen_min_mem = outlen;
@@ -73,7 +76,7 @@ namespace LibIpsNet
 
                 if (patch.Position == patch.Length)
                 {
-                    uint truncate = ReadUInt24(patchReader);
+                    int truncate = ReadInt24(patchReader);
                     study.outlen_max = truncate;
                     if (outlen > truncate)
                     {
@@ -229,7 +232,6 @@ namespace LibIpsNet
                     byteshere = 0;
                     int stopat = 0;
 
-                    /* TODO: rewrite below: */
                     while (stopat + byteshere < thislen)
                     {
                         if (target[offset + stopat] == target[offset + stopat + byteshere]) byteshere++;
@@ -303,7 +305,7 @@ namespace LibIpsNet
         }
 
 
-        private uint ReadUInt24(this BinaryReader reader)
+        private Int32 ReadInt24(this BinaryReader reader)
         {
             try
             {
@@ -311,13 +313,13 @@ namespace LibIpsNet
                 var b2 = reader.ReadByte();
                 var b3 = reader.ReadByte();
                 return
-                    (((uint)b1) << 16) |
-                    (((uint)b2) << 8) |
-                    ((uint)b3);
+                    (((b1) << 16) |
+                    (((b2) << 8) |
+                    (b3)));
             }
             catch
             {
-                return 0u;
+                return 0;
             }
         }
         private void Write8(byte value, List<byte> list)
