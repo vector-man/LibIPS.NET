@@ -130,8 +130,9 @@ namespace LibIpsNet
 
         //There are no known cases where LIPS wins over libips.
         public IpsError Create(string source, string target, string patch)
-        { 
-            using(FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create)) {
+        {
+            using (FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create))
+            {
                 return Create(sourceStream, targetStream, patchStream);
             }
         }
@@ -261,11 +262,10 @@ namespace LibIpsNet
                             stopat += byteshere;
                             byteshere = 0;
                         }
-                        // The code !memcmp(&target[offset + stopat + byteshere], &target[offset + stopat + byteshere + 1], 9 - 1) in C is replaced by the code in LINQ:
-                        // !target.Skip(offset + stopat + byteshere).Take( 9 - 1).ToArray().SequenceEqual(target.Skip(offset + stopat + byteshere + 1).Take(9 - 1).ToArray())
+
                         if (byteshere > 8 + 5 || //rle-worthy despite two ips headers
                                 (byteshere > 8 && stopat + byteshere == thislen) || //rle-worthy at end of data
-                                (byteshere > 8 && !target.Skip(offset + stopat + byteshere).Take(9 - 1).SequenceEqual(target.Skip(offset + stopat + byteshere + 1).Take(9 - 1))))//rle-worthy before another rle-worthy
+                                (byteshere > 8 && !Compare(target, (offset + stopat + byteshere), target, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
                         {
                             if (stopat != 0) thislen = stopat;
                             break;//we don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
@@ -278,7 +278,7 @@ namespace LibIpsNet
                     {
                         while (offset + thislen - 1 < sourcelen && target[offset + thislen - 1] == (offset + thislen - 1 < sourcelen ? source[offset + thislen - 1] : 0)) thislen--;
                     }
-                    if (thislen > 3 && target.Skip(offset).Take(thislen - 2).SequenceEqual(target.Skip(offset + 1).Take(thislen - 2)))
+                    if (thislen > 3 && Compare(target, offset, target, (offset + 1), (thislen - 2)))
                     {
                         Write24(offset, output);
                         Write16(0, output);
