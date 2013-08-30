@@ -358,6 +358,15 @@ namespace LibIpsNet
             Write8((byte)(value >> 8), list);
             Write8((byte)(value), list);
         }
+        // Compares two byte lists with a starting point and a count of elements.
+        private bool Compare(List<byte> source, int sourceStart, List<byte> target, int targetStart, int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                if (source[sourceStart] != target[targetStart]) return false;
+            }
+            return true;
+        }
 
 
     }
