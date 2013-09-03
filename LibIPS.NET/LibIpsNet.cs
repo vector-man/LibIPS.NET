@@ -140,22 +140,10 @@ namespace LibIpsNet
         {
             return Create(source, target, patch);
         }
-        public IpsError Create(Stream source, Stream target, Stream patch)
+        public IpsError Create(Stream source, Stream target, ref Stream patch)
         {
-            List<byte> sourceList = new List<byte>(ReadFully(source));
-            List<byte> targetList = new List<byte>(ReadFully(target));
-            List<byte> patchList;
-
-            IpsError result = Create(sourceList, targetList, out patchList);
-
-            patch.Write(patchList.ToArray(), 0, patchList.Count);
-
-            return result;
-        }
-        public IpsError Create(List<byte> source, List<byte> target, out List<byte> patch)
-        {
-            int sourcelen = source.Count;
-            int targetlen = target.Count;
+            long sourcelen = source.Length;
+            long targetlen = target.Length;
 
             bool sixteenmegabytes = false;
 
@@ -172,147 +160,150 @@ namespace LibIpsNet
             }
 
             int offset = 0;
-            List<byte> output = new List<byte>();
 
-            Write8((byte)'P', output);
-            Write8((byte)'A', output);
-            Write8((byte)'T', output);
-            Write8((byte)'C', output);
-            Write8((byte)'H', output);
+            using (BinaryReader sourceReader = new BinaryReader(source))
+            using(BinaryReader targetReader = new BinaryReader(target)) 
+            using(BinaryWriter patchWriter = new BinaryWriter(patch)) {
 
-            int lastknownchange = 0;
-            while (offset < targetlen)
-            {
-                while (offset < sourcelen && (offset < sourcelen ? source[offset] : 0) == target[offset]) offset++;
+                Write8((byte)'P', patchWriter);
+                Write8((byte)'A', patchWriter);
+                Write8((byte)'T', patchWriter);
+                Write8((byte)'C', patchWriter);
+                Write8((byte)'H', patchWriter);
 
-                //check how much we need to edit until it starts getting similar
-                int thislen = 0;
-                int consecutiveunchanged = 0;
-                thislen = lastknownchange - offset;
-                if (thislen < 0) thislen = 0;
-
-                while (true)
+                int lastknownchange = 0;
+                while (offset < targetlen)
                 {
-                    int thisbyte = offset + thislen + consecutiveunchanged;
-                    if (thisbyte < sourcelen && (thisbyte < sourcelen ? source[thisbyte] : 0) == target[thisbyte]) consecutiveunchanged++;
-                    else
-                    {
-                        thislen += consecutiveunchanged + 1;
-                        consecutiveunchanged = 0;
-                    }
-                    if (consecutiveunchanged >= 6 || thislen >= 65536) break;
-                }
+                    while (offset < sourcelen && (offset < sourcelen ? Read8(sourceReader, offset) : 0) == Read8(targetReader, offset)) offset++;
 
-                //avoid premature EOF
-                if (offset == EndOfFile)
-                {
-                    offset--;
-                    thislen++;
-                }
-
-                lastknownchange = offset + thislen;
-                if (thislen > 65535) thislen = 65535;
-                if (offset + thislen > targetlen) thislen = targetlen - offset;
-                if (offset == targetlen) continue;
-
-                //check if RLE here is worthwhile
-                int byteshere = 0;
-
-                for (byteshere = 0; byteshere < thislen && target[offset] == target[offset + byteshere]; byteshere++) { }
-
-
-                if (byteshere == thislen)
-                {
-                    int thisbyte = target[offset];
-                    int i = 0;
+                    //check how much we need to edit until it starts getting similar
+                    int thislen = 0;
+                    int consecutiveunchanged = 0;
+                    thislen = lastknownchange - offset;
+                    if (thislen < 0) thislen = 0;
 
                     while (true)
                     {
-                        int pos = offset + byteshere + i - 1;
-                        if (pos >= targetlen || target[pos] != thisbyte || byteshere + i > 65535) break;
-                        if (pos >= sourcelen || (pos < sourcelen ? source[pos] : 0) != thisbyte)
-                        {
-                            byteshere += i;
-                            thislen += i;
-                            i = 0;
-                        }
-                        i++;
-                    }
-
-                }
-                if ((byteshere > 8 - 5 && byteshere == thislen) || byteshere > 8)
-                {
-                    Write24(offset, output);
-                    Write16(0, output);
-                    Write16(byteshere, output);
-                    Write8(target[offset], output);
-                    offset += byteshere;
-                }
-                else
-                {
-                    //check if we'd gain anything from ending the block early and switching to RLE
-                    byteshere = 0;
-                    int stopat = 0;
-
-                    while (stopat + byteshere < thislen)
-                    {
-                        if (target[offset + stopat] == target[offset + stopat + byteshere]) byteshere++;
+                        int thisbyte = offset + thislen + consecutiveunchanged;
+                        if (thisbyte < sourcelen && (thisbyte < sourcelen ? Read8(sourceReader, thisbyte) : 0) == Read8(sourceReader, thisbyte)) consecutiveunchanged++;
                         else
                         {
-                            stopat += byteshere;
-                            byteshere = 0;
+                            thislen += consecutiveunchanged + 1;
+                            consecutiveunchanged = 0;
                         }
+                        if (consecutiveunchanged >= 6 || thislen >= 65536) break;
+                    }
 
-                        if (byteshere > 8 + 5 || //rle-worthy despite two ips headers
-                                (byteshere > 8 && stopat + byteshere == thislen) || //rle-worthy at end of data
-                                (byteshere > 8 && !Compare(target, (offset + stopat + byteshere), target, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
+                    //avoid premature EOF
+                    if (offset == EndOfFile)
+                    {
+                        offset--;
+                        thislen++;
+                    }
+
+                    lastknownchange = offset + thislen;
+                    if (thislen > 65535) thislen = 65535;
+                    if (offset + thislen > targetlen) thislen = (int)(targetlen - offset);
+                    if (offset == targetlen) continue;
+
+                    //check if RLE here is worthwhile
+                    int byteshere = 0;
+
+                    for (byteshere = 0; byteshere < thislen && Read8(targetReader, offset) == Read8(targetReader, (offset + byteshere)); byteshere++) { }
+
+
+                    if (byteshere == thislen)
+                    {
+                        int thisbyte = Read8(targetReader, offset);
+                        int i = 0;
+
+                        while (true)
                         {
-                            if (stopat != 0) thislen = stopat;
-                            break;//we don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
+                            int pos = offset + byteshere + i - 1;
+                            if (pos >= targetlen || Read8(targetReader, pos) != thisbyte || byteshere + i > 65535) break;
+                            if (pos >= sourcelen || (pos < sourcelen ? Read8(sourceReader, pos) : 0) != thisbyte)
+                            {
+                                byteshere += i;
+                                thislen += i;
+                                i = 0;
+                            }
+                            i++;
                         }
-                    }
 
-
-                    //don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes
-                    if (offset + thislen != targetlen)
-                    {
-                        while (offset + thislen - 1 < sourcelen && target[offset + thislen - 1] == (offset + thislen - 1 < sourcelen ? source[offset + thislen - 1] : 0)) thislen--;
                     }
-                    if (thislen > 3 && Compare(target, offset, target, (offset + 1), (thislen - 2)))
+                    if ((byteshere > 8 - 5 && byteshere == thislen) || byteshere > 8)
                     {
-                        Write24(offset, output);
-                        Write16(0, output);
-                        Write16(thislen, output);
-                        Write8(target[offset], output);
+                        Write24(offset, patchWriter);
+                        Write16(0, patchWriter);
+                        Write16(byteshere, patchWriter);
+                        Write8(Read8(targetReader, offset), patchWriter);
+                        offset += byteshere;
                     }
                     else
                     {
-                        Write24(offset, output);
-                        Write16(thislen, output);
-                        int i;
-                        for (i = 0; i < thislen; i++)
+                        //check if we'd gain anything from ending the block early and switching to RLE
+                        byteshere = 0;
+                        int stopat = 0;
+
+                        while (stopat + byteshere < thislen)
                         {
-                            Write8(target[offset + i], output);
+                            if (Read8(targetReader, (offset + stopat)) == Read8(targetReader, (offset + stopat + byteshere))) byteshere++;
+                            else
+                            {
+                                stopat += byteshere;
+                                byteshere = 0;
+                            }
+
+                            if (byteshere > 8 + 5 || //rle-worthy despite two ips headers
+                                    (byteshere > 8 && stopat + byteshere == thislen) || //rle-worthy at end of data
+                                    (byteshere > 8 && !Compare(targetReader, (offset + stopat + byteshere), targetReader, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
+                            {
+                                if (stopat != 0) thislen = stopat;
+                                break;//we don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
+                            }
                         }
+
+
+                        //don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes
+                        if (offset + thislen != targetlen)
+                        {
+                            while (offset + thislen - 1 < sourcelen && Read8(targetReader, (offset + thislen - 1)) == (offset + thislen - 1 < sourcelen ? Read8(sourceReader, (offset + thislen - 1)) : 0)) thislen--;
+                        }
+                        if (thislen > 3 && Compare(targetReader, offset, targetReader, (offset + 1), (thislen - 2)))
+                        {
+                            Write24(offset, patchWriter);
+                            Write16(0, patchWriter);
+                            Write16(thislen, patchWriter);
+                            Write8(Read8(targetReader, offset), patchWriter);
+                        }
+                        else
+                        {
+                            Write24(offset, patchWriter);
+                            Write16(thislen, patchWriter);
+                            int i;
+                            for (i = 0; i < thislen; i++)
+                            {
+                                Write8(Read8(targetReader, (offset + i)), patchWriter);
+                            }
+                        }
+                        offset += thislen;
+
                     }
-                    offset += thislen;
-
                 }
+
+
+
+                Write8((byte)'E', patchWriter);
+                Write8((byte)'O', patchWriter);
+                Write8((byte)'F', patchWriter);
+
+                if (sourcelen > targetlen) Write24((int)targetlen, patchWriter);
+
+                if (sixteenmegabytes) return IpsError.Ips16MB;
+                if (patchWriter.BaseStream.Length == 8) return IpsError.IpsIdentical;
+                return IpsError.IpsOk;
+
             }
-
-
-
-            Write8((byte)'E', output);
-            Write8((byte)'O', output);
-            Write8((byte)'F', output);
-
-            if (sourcelen > targetlen) Write24(targetlen, output);
-
-            patch = output;
-
-            if (sixteenmegabytes) return IpsError.Ips16MB;
-            if (output.Count == 8) return IpsError.IpsIdentical;
-            return IpsError.IpsOk;
 
         }
 
