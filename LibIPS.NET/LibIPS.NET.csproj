@@ -39,6 +39,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exceptions\Ips16MBException.cs" />
+    <Compile Include="Exceptions\IpsIdenticalException.cs" />
+    <Compile Include="Exceptions\IpsInvalidException.cs" />
+    <Compile Include="Exceptions\IpsNotThisException.cs" />
+    <Compile Include="Exceptions\IpsScrambledException.cs" />
     <Compile Include="LibIpsNet.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
