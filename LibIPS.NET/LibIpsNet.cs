@@ -393,11 +393,17 @@ namespace LibIpsNet
         }
 
         // Compares two byte lists with a starting point and a count of elements.
-        private bool Compare(List<byte> source, int sourceStart, List<byte> target, int targetStart, int count)
+        private bool Compare(BinaryReader source, int sourceStart, BinaryReader target, int targetStart, int count)
         {
+            source.BaseStream.Seek(sourceStart, SeekOrigin.Begin);
+            byte[] sourceData = source.ReadBytes(count);
+            
+            target.BaseStream.Seek(targetStart, SeekOrigin.Begin);
+            byte[] targetData = target.ReadBytes(count);
+
             for (int i = 0; i < count; i++)
             {
-                if (source[sourceStart] != target[targetStart]) return false;
+                if (sourceData[i] != targetData[i]) return false;
             }
             return true;
         }
