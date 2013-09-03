@@ -98,9 +98,9 @@ namespace CodeIsle
             }
 
         }
-        public IpsError ApplyStudy(Stream patch, IpsStudy study, Stream target)
+        public IpsError ApplyStudy(Stream patch, IpsStudy study, Stream source, Stream target)
         {
-            long targetLength = target.Length;
+            source.CopyTo(target);
             if (study.Error == IpsError.IpsInvalid) return study.Error;
             int outlen = (int)Clamp(study.OutlenMin, target.Length, study.OutlenMax);
 
@@ -131,7 +131,7 @@ namespace CodeIsle
                     offset = Read24(patchReader);
                 }
             }
-            if (study.OutlenMax != 0xFFFFFFFF && targetLength <= study.OutlenMax) study.Error = IpsError.IpsNotThis; // Truncate data without this being needed is a poor idea.
+            if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) study.Error = IpsError.IpsNotThis; // Truncate data without this being needed is a poor idea.
             return study.Error;
         }
 
