@@ -336,7 +336,7 @@ namespace CodeIsle
         }
         private byte Read8(BinaryReader reader, int offset = -1)
         {
-            if((offset > -1) && (offset != reader.BaseStream.Position) && (offset <= reader.BaseStream.Length)) 
+            if ((offset > -1) && (offset != reader.BaseStream.Position) && (offset <= reader.BaseStream.Length))
             {
                 reader.BaseStream.Seek(offset, SeekOrigin.Begin);
             }
@@ -368,7 +368,7 @@ namespace CodeIsle
             {
                 byte[] data = reader.ReadBytes(3);
 
-                return (data[0] << 16 ) | (data[1] << 8)| data[2];
+                return (data[0] << 16) | (data[1] << 8) | data[2];
             }
             else
             {
@@ -397,7 +397,7 @@ namespace CodeIsle
         {
             source.BaseStream.Seek(sourceStart, SeekOrigin.Begin);
             byte[] sourceData = source.ReadBytes(count);
-            
+
             target.BaseStream.Seek(targetStart, SeekOrigin.Begin);
             byte[] targetData = target.ReadBytes(count);
 
