@@ -376,17 +376,23 @@ namespace LibIpsNet
                 return 0;
             }
         }
-        private void Write16(int value, List<byte> list)
+
+        private void Write8(byte value, BinaryWriter writer)
         {
-            Write8((byte)(value >> 8), list);
-            Write8((byte)(value), list);
+            writer.Write(value);
         }
-        private void Write24(int value, List<byte> list)
+        private void Write16(int value, BinaryWriter writer)
         {
-            Write8((byte)(value >> 16), list);
-            Write8((byte)(value >> 8), list);
-            Write8((byte)(value), list);
+            Write8((byte)(value >> 8), writer);
+            Write8((byte)(value), writer);
         }
+        private void Write24(int value, BinaryWriter writer)
+        {
+            Write8((byte)(value >> 16), writer);
+            Write8((byte)(value >> 8), writer);
+            Write8((byte)(value), writer);
+        }
+
         // Compares two byte lists with a starting point and a count of elements.
         private bool Compare(List<byte> source, int sourceStart, List<byte> target, int targetStart, int count)
         {
