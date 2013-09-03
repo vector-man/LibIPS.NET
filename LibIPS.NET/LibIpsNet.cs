@@ -335,8 +335,46 @@ namespace LibIpsNet
             }
         }
         private void Write8(byte value, List<byte> list)
+        private byte Read8(BinaryReader reader, int offset = -1)
         {
-            list.Add(value);
+            if((offset > -1) && (offset != reader.BaseStream.Position) && (offset <= reader.BaseStream.Length)) 
+            {
+                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+            }
+            if (reader.PeekChar() != -1)
+            {
+                return reader.ReadByte();
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        private int Read16(BinaryReader reader)
+        {
+            if (reader.BaseStream.Position + 1 < reader.BaseStream.Length)
+            {
+                byte[] data = reader.ReadBytes(2);
+
+                return (data[0] << 8) | data[1];
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        private int Read24(BinaryReader reader)
+        {
+            if (reader.BaseStream.Position + 1 < reader.BaseStream.Length)
+            {
+                byte[] data = reader.ReadBytes(3);
+
+                return (data[0] << 16 ) | (data[1] << 8)| data[2];
+            }
+            else
+            {
+                return 0;
+            }
         }
         private void Write16(int value, List<byte> list)
         {
