@@ -98,12 +98,41 @@ namespace CodeIsle
             }
 
         }
-        public IpsError ApplyStudy(Stream patch, IpsStudy study, Stream inFile, Stream outFile)
+        public IpsError ApplyStudy(Stream patch, IpsStudy study, Stream target)
         {
-            throw new NotImplementedException();
-            study.Error = IpsError.IpsInvalid;
-            if (patch.Length < 8) return IpsError.IpsInvalid;
+            long targetLength = target.Length;
+            if (study.Error == IpsError.IpsInvalid) return study.Error;
+            int outlen = (int)Clamp(study.OutlenMin, target.Length, study.OutlenMax);
 
+            using (BinaryReader patchReader = new BinaryReader(patch))
+            using (BinaryWriter targetWriter = new BinaryWriter(target))
+            {
+                // Skip PATCH text.
+                patchReader.BaseStream.Seek(5, SeekOrigin.Begin);
+                int offset = Read24(patchReader);
+                while (offset != EndOfFile)
+                {
+                    int size = Read16(patchReader);
+
+
+                    targetWriter.Seek(offset, SeekOrigin.Begin);
+                    // If RLE patch.
+                    if (size == 0)
+                    {
+                        size = Read16(patchReader);
+                        targetWriter.Write(Enumerable.Repeat<byte>(Read8(patchReader), offset).ToArray());
+                    }
+                    // If normal patch.
+                    else
+                    {
+                        targetWriter.Write(patchReader.ReadBytes(size));
+
+                    }
+                    offset = Read24(patchReader);
+                }
+            }
+            if (study.OutlenMax != 0xFFFFFFFF && targetLength <= study.OutlenMax) study.Error = IpsError.IpsNotThis; // Truncate data without this being needed is a poor idea.
+            return study.Error;
         }
 
         // Known situations where this function does not generate an optimal patch:
