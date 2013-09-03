@@ -280,14 +280,14 @@ namespace CodeIsle
                                 byteshere = 0;
                             }
                             // RLE-worthy despite two IPS headers.
-                            if (byteshere > 8 + 5 || 
-                                    // RLE-worthy at end of data.
-                                    (byteshere > 8 && stopat + byteshere == thislen) || 
+                            if (byteshere > 8 + 5 ||
+                                // RLE-worthy at end of data.
+                                    (byteshere > 8 && stopat + byteshere == thislen) ||
                                     (byteshere > 8 && !Compare(targetReader, (offset + stopat + byteshere), targetReader, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
                             {
                                 if (stopat != 0) thislen = stopat;
                                 // We don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
-                                break; 
+                                break;
                             }
                         }
 
