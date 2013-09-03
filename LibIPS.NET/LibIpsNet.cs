@@ -37,9 +37,6 @@ namespace LibIpsNet
         };
         public IpsError Study(Stream patch, IpsStudy study)
         {
-            // Code below needs a rewrite.
-            throw new NotImplementedException();
-
             study.Error = IpsError.IpsInvalid;
             if (patch.Length < 8) return IpsError.IpsInvalid;
 
@@ -48,7 +45,7 @@ namespace LibIpsNet
                 // If 'PATCH' text was not found, return IPS was invalid error.
                 if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) return IpsError.IpsInvalid;
 
-                int offset = ReadInt24(patchReader);
+                int offset = Read24(patchReader);
                 int outlen = 0;
                 int thisout = 0;
                 int lastoffset = 0;
@@ -57,7 +54,7 @@ namespace LibIpsNet
 
                 while (offset != EndOfFile)
                 {
-                    int size = patchReader.ReadInt16();
+                    int size = Read16(patchReader);
 
                     if (size == 0)
                     {
@@ -74,7 +71,7 @@ namespace LibIpsNet
                     if (thisout > outlen) outlen = thisout;
                     if (patch.Position >= patch.Length) return IpsError.IpsInvalid;
 
-                    offset = ReadInt24(patchReader);
+                    offset = Read24(patchReader);
 
                 }
                 study.OutlenMinMem = outlen;
@@ -82,7 +79,7 @@ namespace LibIpsNet
 
                 if (patch.Position == patch.Length)
                 {
-                    int truncate = ReadInt24(patchReader);
+                    int truncate = Read24(patchReader);
                     study.OutlenMax = truncate;
                     if (outlen > truncate)
                     {
@@ -313,34 +310,6 @@ namespace LibIpsNet
 
             }
 
-        }
-
-        public static byte[] ReadFully(Stream input)
-        {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                input.CopyTo(ms);
-                return ms.ToArray();
-            }
-        }
-
-
-        private Int32 ReadInt24(this BinaryReader reader)
-        {
-            try
-            {
-                var b1 = reader.ReadByte();
-                var b2 = reader.ReadByte();
-                var b3 = reader.ReadByte();
-                return
-                    (((b1) << 16) |
-                    (((b2) << 8) |
-                    (b3)));
-            }
-            catch
-            {
-                return 0;
-            }
         }
         private byte Read8(BinaryReader reader, int offset = -1)
         {
