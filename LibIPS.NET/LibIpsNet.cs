@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 namespace LibIpsNet
 {
-    public class IpsLibNet
+    public class LibIpsNet
     {
         const string PatchText = "PATCH";
         const int EndOfFile = 0x454F46;
