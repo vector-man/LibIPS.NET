@@ -11,7 +11,7 @@ namespace CodeIsle
         const string PatchText = "PATCH";
         const int EndOfFile = 0x454F46;
 
-        enum IpsError
+        public enum IpsError
         {
             // Patch applied or created successfully.
             IpsOk,
