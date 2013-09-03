@@ -13,13 +13,19 @@ namespace LibIpsNet
 
         enum IpsError
         {
-            IpsOk,//Patch applied or created successfully.
-            IpsNotThis,//The patch is most likely not intended for this ROM.
-            IpsScrambled,//The patch is technically valid, but seems scrambled or malformed.
-            IpsInvalid,//The patch is invalid.
-            Ips16MB,//One or both files is bigger than 16MB. The IPS format doesn't support that. The created
-            //patch contains only the differences to that point.
-            IpsIdentical,//The input buffers are identical.
+            // Patch applied or created successfully.
+            IpsOk,
+            // The patch is most likely not intended for this ROM.
+            IpsNotThis,
+            // The patch is technically valid, but seems scrambled or malformed.
+            IpsScrambled,
+            // The patch is invalid.
+            IpsInvalid,
+            // One or both files is bigger than 16MB. The IPS format doesn't support that. 
+            // The created patch contains only the differences to that point.
+            Ips16MB,
+            // The input buffers are identical.
+            IpsIdentical,
         };
 
         public struct IpsStudy
@@ -103,32 +109,32 @@ namespace LibIpsNet
 
         }
 
-        //Known situations where this function does not generate an optimal patch:
-        //In:  80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80
-        //Out: FF FF FF FF FF FF FF FF 00 01 02 03 04 05 06 07 FF FF FF FF FF FF FF FF
-        //IPS: [         RLE         ] [        Copy         ] [         RLE         ]
-        //Possible improvement: RLE across the entire file, copy on top of that.
-        //Rationale: It would be a huge pain to create such a multi-pass tool if it should support writing a byte
-        //  more than twice, and I don't like half-assing stuff.
+        // Known situations where this function does not generate an optimal patch:
+        // In:  80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80
+        // Out: FF FF FF FF FF FF FF FF 00 01 02 03 04 05 06 07 FF FF FF FF FF FF FF FF
+        // IPS: [         RLE         ] [        Copy         ] [         RLE         ]
+        // Possible improvement: RLE across the entire file, copy on top of that.
+        // Rationale: It would be a huge pain to create such a multi-pass tool if it should support writing a byte
+        // more than twice, and I don't like half-assing stuff.
 
 
-        //Known improvements over LIPS:
-        //In:  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
-        //Out: FF 01 02 03 04 05 FF FF FF FF FF FF FF FF FF FF
-        //LIPS:[      Copy     ] [            RLE            ]
-        //Mine:[] [ Unchanged  ] [            RLE            ]
-        //Rationale: While LIPS can break early if it finds something RLEable in the middle of a block, it's not
-        //  smart enough to back off if there's something unchanged between the changed area and the RLEable spot.
+        // Known improvements over LIPS:
+        // In:  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+        // Out: FF 01 02 03 04 05 FF FF FF FF FF FF FF FF FF FF
+        // LIPS:[      Copy     ] [            RLE            ]
+        // Mine:[] [ Unchanged  ] [            RLE            ]
+        // Rationale: While LIPS can break early if it finds something RLEable in the middle of a block, it's not
+        // smart enough to back off if there's something unchanged between the changed area and the RLEable spot.
 
-        //In:  FF FF FF FF FF FF FF
-        //Out: 00 00 00 00 01 02 03
-        //LIPS:[   RLE   ] [ Copy ]
-        //Mine:[       Copy       ]
-        //Rationale: Again, RLE is no good at RLE.
+        // In:  FF FF FF FF FF FF FF
+        // Out: 00 00 00 00 01 02 03
+        // LIPS:[   RLE   ] [ Copy ]
+        // Mine:[       Copy       ]
+        // Rationale: Again, RLE is no good at RLE.
 
-        //It is also known that I win in some other situations. I didn't bother checking which, though.
+        // It is also known that I win in some other situations. I didn't bother checking which, though.
 
-        //There are no known cases where LIPS wins over libips.
+        // There are no known cases where LIPS wins over libips.
         public IpsError Create(string source, string target, string patch)
         {
             using (FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create))
@@ -176,7 +182,7 @@ namespace LibIpsNet
                 {
                     while (offset < sourcelen && (offset < sourcelen ? Read8(sourceReader, offset) : 0) == Read8(targetReader, offset)) offset++;
 
-                    //check how much we need to edit until it starts getting similar
+                    // Check how much we need to edit until it starts getting similar.
                     int thislen = 0;
                     int consecutiveunchanged = 0;
                     thislen = lastknownchange - offset;
@@ -194,7 +200,7 @@ namespace LibIpsNet
                         if (consecutiveunchanged >= 6 || thislen >= 65536) break;
                     }
 
-                    //avoid premature EOF
+                    // Avoid premature EOF.
                     if (offset == EndOfFile)
                     {
                         offset--;
@@ -206,7 +212,7 @@ namespace LibIpsNet
                     if (offset + thislen > targetlen) thislen = (int)(targetlen - offset);
                     if (offset == targetlen) continue;
 
-                    //check if RLE here is worthwhile
+                    // Check if RLE here is worthwhile.
                     int byteshere = 0;
 
                     for (byteshere = 0; byteshere < thislen && Read8(targetReader, offset) == Read8(targetReader, (offset + byteshere)); byteshere++) { }
@@ -241,7 +247,7 @@ namespace LibIpsNet
                     }
                     else
                     {
-                        //check if we'd gain anything from ending the block early and switching to RLE
+                        // Check if we'd gain anything from ending the block early and switching to RLE.
                         byteshere = 0;
                         int stopat = 0;
 
@@ -253,18 +259,20 @@ namespace LibIpsNet
                                 stopat += byteshere;
                                 byteshere = 0;
                             }
-
-                            if (byteshere > 8 + 5 || //rle-worthy despite two ips headers
-                                    (byteshere > 8 && stopat + byteshere == thislen) || //rle-worthy at end of data
+                            // RLE-worthy despite two IPS headers.
+                            if (byteshere > 8 + 5 || 
+                                    // RLE-worthy at end of data.
+                                    (byteshere > 8 && stopat + byteshere == thislen) || 
                                     (byteshere > 8 && !Compare(targetReader, (offset + stopat + byteshere), targetReader, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
                             {
                                 if (stopat != 0) thislen = stopat;
-                                break;//we don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
+                                // We don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
+                                break; 
                             }
                         }
 
 
-                        //don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes
+                        // Don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes.
                         if (offset + thislen != targetlen)
                         {
                             while (offset + thislen - 1 < sourcelen && Read8(targetReader, (offset + thislen - 1)) == (offset + thislen - 1 < sourcelen ? Read8(sourceReader, (offset + thislen - 1)) : 0)) thislen--;
@@ -392,7 +400,7 @@ namespace LibIpsNet
             Write8((byte)(value), writer);
         }
 
-        // Compares two byte lists with a starting point and a count of elements.
+        // Compares two BinaryReaders with a starting point and a count of elements.
         private bool Compare(BinaryReader source, int sourceStart, BinaryReader target, int targetStart, int count)
         {
             source.BaseStream.Seek(sourceStart, SeekOrigin.Begin);
