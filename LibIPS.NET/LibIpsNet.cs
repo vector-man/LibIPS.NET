@@ -408,6 +408,19 @@ namespace CodeIsle
             return true;
         }
 
+        private long Min(long a, long b)
+        {
+            return (a) < (b) ? (a) : (b);
+        }
 
+        private long Max(long a, long b)
+        {
+            return (a) > (b) ? (a) : (b);
+        }
+
+        private long Clamp(long a, long b, long c)
+        {
+            return Max(a, Min(b, c));
+        }
     }
 }
