@@ -187,8 +187,9 @@ namespace CodeIsle
             int offset = 0;
 
             using (BinaryReader sourceReader = new BinaryReader(source))
-            using(BinaryReader targetReader = new BinaryReader(target)) 
-            using(BinaryWriter patchWriter = new BinaryWriter(patch)) {
+            using (BinaryReader targetReader = new BinaryReader(target))
+            using (BinaryWriter patchWriter = new BinaryWriter(patch))
+            {
 
                 Write8((byte)'P', patchWriter);
                 Write8((byte)'A', patchWriter);
