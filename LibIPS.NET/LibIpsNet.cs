@@ -240,7 +240,7 @@ namespace CodeIsle
                     while (true)
                     {
                         int thisbyte = offset + thislen + consecutiveunchanged;
-                        if (thisbyte < sourcelen && (thisbyte < sourcelen ? Read8(sourceReader, thisbyte) : 0) == Read8(sourceReader, thisbyte)) consecutiveunchanged++;
+                        if (thisbyte < sourcelen && (thisbyte < sourcelen ? Read8(sourceReader, thisbyte) : 0) == Read8(targetReader, thisbyte)) consecutiveunchanged++;
                         else
                         {
                             thislen += consecutiveunchanged + 1;
@@ -365,11 +365,11 @@ namespace CodeIsle
         }
         private byte Read8(BinaryReader reader, int offset = -1)
         {
-            if ((offset > -1) && (offset != reader.BaseStream.Position) && (offset <= reader.BaseStream.Length))
+            if (offset != -1 && reader.BaseStream.Position != offset)
             {
                 reader.BaseStream.Seek(offset, SeekOrigin.Begin);
             }
-            if (reader.PeekChar() != -1)
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
             {
                 return reader.ReadByte();
             }
