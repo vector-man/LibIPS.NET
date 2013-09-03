@@ -132,6 +132,14 @@ namespace CodeIsle
         // It is also known that I win in some other situations. I didn't bother checking which, though.
 
         // There are no known cases where LIPS wins over libips.
+
+        /// <summary>
+        /// Creates an IPS patch file from a source file path and a target file path.
+        /// </summary>
+        /// <param name="source">The source file that contains the original data.</param>
+        /// <param name="target">The target file that contains the modified data.</param>
+        /// <param name="patch">The patch file to contain the resulting patch data.</param>
+        /// <returns></returns>
         public IpsError Create(string source, string target, string patch)
         {
             using (FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create))
@@ -139,10 +147,24 @@ namespace CodeIsle
                 return Create(sourceStream, targetStream, patchStream);
             }
         }
+        /// <summary>
+        /// Creates an IPS patch file stream from a source file stream and a target file stream.
+        /// </summary>
+        /// <param name="source">The source stream that contains the original data.</param>
+        /// <param name="target">The target stream that contains the modified data.</param>
+        /// <param name="patch">The patch file stream to contain the resulting patch data.</param>
+        /// <returns></returns>
         public IpsError Create(FileStream source, FileStream target, FileStream patch)
         {
             return Create(source, target, patch);
         }
+        /// <summary>
+        /// Creates an IPS patch stream from a source stream and a target stream.
+        /// </summary>
+        /// <param name="source">The source stream that contains the original data.</param>
+        /// <param name="target">The target stream that contains the modified data.</param>
+        /// <param name="patch">The patch stream to contain the resulting patch data.</param>
+        /// <returns></returns>
         public IpsError Create(Stream source, Stream target, ref Stream patch)
         {
             long sourcelen = source.Length;
