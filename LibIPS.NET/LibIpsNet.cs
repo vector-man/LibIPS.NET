@@ -334,7 +334,6 @@ namespace LibIpsNet
                 return 0;
             }
         }
-        private void Write8(byte value, List<byte> list)
         private byte Read8(BinaryReader reader, int offset = -1)
         {
             if((offset > -1) && (offset != reader.BaseStream.Position) && (offset <= reader.BaseStream.Length)) 
