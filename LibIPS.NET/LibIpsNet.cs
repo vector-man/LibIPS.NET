@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-namespace LibIpsNet
+namespace CodeIsle
 {
     public class LibIpsNet
     {
