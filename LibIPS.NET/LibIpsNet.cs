@@ -360,7 +360,8 @@ namespace CodeIsle
             }
 
         }
-        private byte Read8(BinaryReader reader, int offset = -1)
+       // Helper to read 8 bit.
+       private byte Read8(BinaryReader reader, int offset = -1)
         {
             if (offset != -1 && reader.BaseStream.Position != offset)
             {
@@ -375,6 +376,7 @@ namespace CodeIsle
                 return 0;
             }
         }
+       // Helper to read 16bit.
         private int Read16(BinaryReader reader)
         {
             if (reader.BaseStream.Position + 1 < reader.BaseStream.Length)
@@ -388,6 +390,7 @@ namespace CodeIsle
                 return 0;
             }
         }
+        // Helper to read 24bit.
         private int Read24(BinaryReader reader)
         {
             if (reader.BaseStream.Position + 1 < reader.BaseStream.Length)
@@ -401,16 +404,18 @@ namespace CodeIsle
                 return 0;
             }
         }
-
+        // Helper to write 8bit.
         private void Write8(byte value, BinaryWriter writer)
         {
             writer.Write(value);
         }
+        // Helper to write 16bit.
         private void Write16(int value, BinaryWriter writer)
         {
             Write8((byte)(value >> 8), writer);
             Write8((byte)(value), writer);
         }
+        // Helper to write 24bit.
         private void Write24(int value, BinaryWriter writer)
         {
             Write8((byte)(value >> 16), writer);
@@ -418,7 +423,7 @@ namespace CodeIsle
             Write8((byte)(value), writer);
         }
 
-        // Compares two BinaryReaders with a starting point and a count of elements.
+        // Helper to Compare two BinaryReaders with a starting point and a count of elements.
         private bool Compare(BinaryReader source, int sourceStart, BinaryReader target, int targetStart, int count)
         {
             source.BaseStream.Seek(sourceStart, SeekOrigin.Begin);
@@ -433,17 +438,17 @@ namespace CodeIsle
             }
             return true;
         }
-
+        // Helper for minimum value.
         private long Min(long a, long b)
         {
             return (a) < (b) ? (a) : (b);
         }
-
+        // Helper for maximum value.
         private long Max(long a, long b)
         {
             return (a) > (b) ? (a) : (b);
         }
-
+        // Helper to clamp a value to a range.
         private long Clamp(long a, long b, long c)
         {
             return Max(a, Min(b, c));
