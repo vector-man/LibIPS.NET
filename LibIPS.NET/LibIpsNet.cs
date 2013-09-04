@@ -41,60 +41,60 @@ namespace CodeIsle
             study.Error = IpsError.IpsInvalid;
             if (patch.Length < 8) throw new Exceptions.IpsInvalidException();
 
-            using (var patchReader = new BinaryReader(patch))
+            // If 'PATCH' text was not found, return IPS was invalid error.
+            byte[] header = new byte[PatchText.Length];
+            patch.Read(header, 0, PatchText.Length);
+            if (!Enumerable.SequenceEqual(header, System.Text.Encoding.ASCII.GetBytes(PatchText))) throw new Exceptions.IpsInvalidException();
+
+            int offset = Read24(patch);
+            int outlen = 0;
+            int thisout = 0;
+            int lastoffset = 0;
+            bool w_scrambled = false;
+            bool w_notthis = false;
+
+            while (offset != EndOfFile)
             {
-                // If 'PATCH' text was not found, return IPS was invalid error.
-                if (!new string(patchReader.ReadChars(PatchText.Length)).Equals(PatchText)) throw new Exceptions.IpsInvalidException();
+                int size = Read16(patch);
 
-                int offset = Read24(patchReader);
-                int outlen = 0;
-                int thisout = 0;
-                int lastoffset = 0;
-                bool w_scrambled = false;
-                bool w_notthis = false;
-
-                while (offset != EndOfFile)
+                if (size == 0)
                 {
-                    int size = Read16(patchReader);
-
-                    if (size == 0)
-                    {
-                        thisout = offset + Read16(patchReader);
-                        Read8(patchReader);
-                    }
-                    else
-                    {
-                        thisout = offset + size;
-
-                    }
-                    if (offset < lastoffset) w_scrambled = true;
-                    lastoffset = offset;
-                    if (thisout > outlen) outlen = thisout;
-                    if (patch.Position >= patch.Length) throw new Exceptions.IpsInvalidException();
-
-                    offset = Read24(patchReader);
+                    thisout = offset + Read16(patch);
+                    Read8(patch);
+                }
+                else
+                {
+                    thisout = offset + size;
+                    patch.Seek(size, SeekOrigin.Current);
 
                 }
-                study.OutlenMinMem = outlen;
-                study.OutlenMax = 0xFFFFFFFF;
+                if (offset < lastoffset) w_scrambled = true;
+                lastoffset = offset;
+                if (thisout > outlen) outlen = thisout;
+                if (patch.Position >= patch.Length) throw new Exceptions.IpsInvalidException();
 
-                if (patch.Position == patch.Length)
-                {
-                    int truncate = Read24(patchReader);
-                    study.OutlenMax = truncate;
-                    if (outlen > truncate)
-                    {
-                        outlen = truncate;
-                        w_notthis = true;
-                    }
+                offset = Read24(patch);
 
-                }
-                if (patch.Position != patch.Length) throw new Exceptions.IpsInvalidException();
-
-                study.Error = IpsError.IpsOk;
-                if (w_notthis) study.Error = IpsError.IpsNotThis;
-                if (w_scrambled) study.Error = IpsError.IpsScrambled;
             }
+            study.OutlenMinMem = outlen;
+            study.OutlenMax = 0xFFFFFFFF;
+
+            if (patch.Position + 3 == patch.Length)
+            {
+                int truncate = Read24(patch);
+                study.OutlenMax = truncate;
+                if (outlen > truncate)
+                {
+                    outlen = truncate;
+                    w_notthis = true;
+                }
+
+            }
+            if (patch.Position != patch.Length) throw new Exceptions.IpsInvalidException();
+
+            study.Error = IpsError.IpsOk;
+            if (w_notthis) study.Error = IpsError.IpsNotThis;
+            if (w_scrambled) study.Error = IpsError.IpsScrambled;
             return study;
 
         }
@@ -103,37 +103,41 @@ namespace CodeIsle
             source.CopyTo(target);
             if (study.Error == IpsError.IpsInvalid) throw new Exceptions.IpsInvalidException();
             int outlen = (int)Clamp(study.OutlenMin, target.Length, study.OutlenMax);
+            // Set target file length to new size.
+            target.SetLength(outlen);
 
-            using (BinaryReader patchReader = new BinaryReader(patch))
-            using (BinaryWriter targetWriter = new BinaryWriter(target))
+            // Skip PATCH text.
+            patch.Seek(5, SeekOrigin.Begin);
+            int offset = Read24(patch);
+            while (offset != EndOfFile)
             {
-                // Skip PATCH text.
-                patchReader.BaseStream.Seek(5, SeekOrigin.Begin);
-                int offset = Read24(patchReader);
-                while (offset != EndOfFile)
+                int size = Read16(patch);
+
+
+                target.Seek(offset, SeekOrigin.Begin);
+                // If RLE patch.
+                if (size == 0)
                 {
-                    int size = Read16(patchReader);
-
-
-                    targetWriter.Seek(offset, SeekOrigin.Begin);
-                    // If RLE patch.
-                    if (size == 0)
-                    {
-                        size = Read16(patchReader);
-                        targetWriter.Write(Enumerable.Repeat<byte>(Read8(patchReader), offset).ToArray());
-                    }
-                    // If normal patch.
-                    else
-                    {
-                        targetWriter.Write(patchReader.ReadBytes(size));
-
-                    }
-                    offset = Read24(patchReader);
+                    size = Read16(patch);
+                    target.Write(Enumerable.Repeat<byte>(Read8(patch), offset).ToArray(), 0, offset);
                 }
+                // If normal patch.
+                else
+                {
+                    byte[] data = new byte[size];
+                    patch.Read(data, 0, size);
+                    target.Write(data, 0, size);
+
+                }
+                offset = Read24(patch);
             }
             if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
         }
-
+        public void Apply(Stream patch, Stream source, Stream target)
+        {
+            IpsStudy study = Study(patch);
+            ApplyStudy(patch, study, source, target);
+        }
         // Known situations where this function does not generate an optimal patch:
         // In:  80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80
         // Out: FF FF FF FF FF FF FF FF 00 01 02 03 04 05 06 07 FF FF FF FF FF FF FF FF
@@ -214,21 +218,18 @@ namespace CodeIsle
 
             int offset = 0;
 
-            using (BinaryReader sourceReader = new BinaryReader(source))
-            using (BinaryReader targetReader = new BinaryReader(target))
-            using (BinaryWriter patchWriter = new BinaryWriter(patch))
             {
 
-                Write8((byte)'P', patchWriter);
-                Write8((byte)'A', patchWriter);
-                Write8((byte)'T', patchWriter);
-                Write8((byte)'C', patchWriter);
-                Write8((byte)'H', patchWriter);
+                Write8((byte)'P', patch);
+                Write8((byte)'A', patch);
+                Write8((byte)'T', patch);
+                Write8((byte)'C', patch);
+                Write8((byte)'H', patch);
 
                 int lastknownchange = 0;
                 while (offset < targetlen)
                 {
-                    while (offset < sourcelen && (offset < sourcelen ? Read8(sourceReader, offset) : 0) == Read8(targetReader, offset)) offset++;
+                    while (offset < sourcelen && (offset < sourcelen ? Read8(source, offset) : 0) == Read8(target, offset)) offset++;
 
                     // Check how much we need to edit until it starts getting similar.
                     int thislen = 0;
@@ -239,7 +240,7 @@ namespace CodeIsle
                     while (true)
                     {
                         int thisbyte = offset + thislen + consecutiveunchanged;
-                        if (thisbyte < sourcelen && (thisbyte < sourcelen ? Read8(sourceReader, thisbyte) : 0) == Read8(targetReader, thisbyte)) consecutiveunchanged++;
+                        if (thisbyte < sourcelen && (thisbyte < sourcelen ? Read8(source, thisbyte) : 0) == Read8(target, thisbyte)) consecutiveunchanged++;
                         else
                         {
                             thislen += consecutiveunchanged + 1;
@@ -263,19 +264,19 @@ namespace CodeIsle
                     // Check if RLE here is worthwhile.
                     int byteshere = 0;
 
-                    for (byteshere = 0; byteshere < thislen && Read8(targetReader, offset) == Read8(targetReader, (offset + byteshere)); byteshere++) { }
+                    for (byteshere = 0; byteshere < thislen && Read8(target, offset) == Read8(target, (offset + byteshere)); byteshere++) { }
 
 
                     if (byteshere == thislen)
                     {
-                        int thisbyte = Read8(targetReader, offset);
+                        int thisbyte = Read8(target, offset);
                         int i = 0;
 
                         while (true)
                         {
                             int pos = offset + byteshere + i - 1;
-                            if (pos >= targetlen || Read8(targetReader, pos) != thisbyte || byteshere + i > 65535) break;
-                            if (pos >= sourcelen || (pos < sourcelen ? Read8(sourceReader, pos) : 0) != thisbyte)
+                            if (pos >= targetlen || Read8(target, pos) != thisbyte || byteshere + i > 65535) break;
+                            if (pos >= sourcelen || (pos < sourcelen ? Read8(source, pos) : 0) != thisbyte)
                             {
                                 byteshere += i;
                                 thislen += i;
@@ -287,10 +288,10 @@ namespace CodeIsle
                     }
                     if ((byteshere > 8 - 5 && byteshere == thislen) || byteshere > 8)
                     {
-                        Write24(offset, patchWriter);
-                        Write16(0, patchWriter);
-                        Write16(byteshere, patchWriter);
-                        Write8(Read8(targetReader, offset), patchWriter);
+                        Write24(offset, patch);
+                        Write16(0, patch);
+                        Write16(byteshere, patch);
+                        Write8(Read8(target, offset), patch);
                         offset += byteshere;
                     }
                     else
@@ -301,7 +302,7 @@ namespace CodeIsle
 
                         while (stopat + byteshere < thislen)
                         {
-                            if (Read8(targetReader, (offset + stopat)) == Read8(targetReader, (offset + stopat + byteshere))) byteshere++;
+                            if (Read8(target, (offset + stopat)) == Read8(target, (offset + stopat + byteshere))) byteshere++;
                             else
                             {
                                 stopat += byteshere;
@@ -311,7 +312,7 @@ namespace CodeIsle
                             if (byteshere > 8 + 5 ||
                                 // RLE-worthy at end of data.
                                     (byteshere > 8 && stopat + byteshere == thislen) ||
-                                    (byteshere > 8 && Compare(targetReader, (offset + stopat + byteshere), targetReader, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
+                                    (byteshere > 8 && Compare(target, (offset + stopat + byteshere), target, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
                             {
                                 if (stopat != 0) thislen = stopat;
                                 // We don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
@@ -323,23 +324,23 @@ namespace CodeIsle
                         // Don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes.
                         if (offset + thislen != targetlen)
                         {
-                            while (offset + thislen - 1 < sourcelen && Read8(targetReader, (offset + thislen - 1)) == (offset + thislen - 1 < sourcelen ? Read8(sourceReader, (offset + thislen - 1)) : 0)) thislen--;
+                            while (offset + thislen - 1 < sourcelen && Read8(target, (offset + thislen - 1)) == (offset + thislen - 1 < sourcelen ? Read8(source, (offset + thislen - 1)) : 0)) thislen--;
                         }
-                        if (thislen > 3 && Compare(targetReader, offset, targetReader, (offset + 1), (thislen - 2)))
+                        if (thislen > 3 && Compare(target, offset, target, (offset + 1), (thislen - 2)))
                         {
-                            Write24(offset, patchWriter);
-                            Write16(0, patchWriter);
-                            Write16(thislen, patchWriter);
-                            Write8(Read8(targetReader, offset), patchWriter);
+                            Write24(offset, patch);
+                            Write16(0, patch);
+                            Write16(thislen, patch);
+                            Write8(Read8(target, offset), patch);
                         }
                         else
                         {
-                            Write24(offset, patchWriter);
-                            Write16(thislen, patchWriter);
+                            Write24(offset, patch);
+                            Write16(thislen, patch);
                             int i;
                             for (i = 0; i < thislen; i++)
                             {
-                                Write8(Read8(targetReader, (offset + i)), patchWriter);
+                                Write8(Read8(target, (offset + i)), patch);
                             }
                         }
                         offset += thislen;
@@ -349,40 +350,40 @@ namespace CodeIsle
 
 
 
-                Write8((byte)'E', patchWriter);
-                Write8((byte)'O', patchWriter);
-                Write8((byte)'F', patchWriter);
+                Write8((byte)'E', patch);
+                Write8((byte)'O', patch);
+                Write8((byte)'F', patch);
 
-                if (sourcelen > targetlen) Write24((int)targetlen, patchWriter);
+                if (sourcelen > targetlen) Write24((int)targetlen, patch);
 
                 if (sixteenmegabytes) throw new Exceptions.Ips16MBException(); ;
-                if (patchWriter.BaseStream.Length == 8) throw new Exceptions.IpsIdenticalException();
+                if (patch.Length == 8) throw new Exceptions.IpsIdenticalException();
             }
 
         }
-       // Helper to read 8 bit.
-       private byte Read8(BinaryReader reader, int offset = -1)
+        // Helper to read 8 bit.
+        private byte Read8(Stream stream, int offset = -1)
         {
-            if (offset != -1 && reader.BaseStream.Position != offset)
+            if (offset != -1 && stream.Position != offset)
             {
-                reader.BaseStream.Seek(offset, SeekOrigin.Begin);
+                stream.Seek(offset, SeekOrigin.Begin);
             }
-            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            if (stream.Position < stream.Length)
             {
-                return reader.ReadByte();
+                return (byte)stream.ReadByte();
             }
             else
             {
                 return 0;
             }
         }
-       // Helper to read 16bit.
-        private int Read16(BinaryReader reader)
+        // Helper to read 16bit.
+        private int Read16(Stream stream)
         {
-            if (reader.BaseStream.Position + 1 < reader.BaseStream.Length)
+            if (stream.Position + 1 < stream.Length)
             {
-                byte[] data = reader.ReadBytes(2);
-
+                byte[] data = new byte[2];
+                stream.Read(data, 0, 2);
                 return (data[0] << 8) | data[1];
             }
             else
@@ -391,12 +392,12 @@ namespace CodeIsle
             }
         }
         // Helper to read 24bit.
-        private int Read24(BinaryReader reader)
+        private int Read24(Stream stream)
         {
-            if (reader.BaseStream.Position + 1 < reader.BaseStream.Length)
+            if (stream.Position + 1 < stream.Length)
             {
-                byte[] data = reader.ReadBytes(3);
-
+                byte[] data = new byte[3];
+                stream.Read(data, 0, 3);
                 return (data[0] << 16) | (data[1] << 8) | data[2];
             }
             else
@@ -405,32 +406,34 @@ namespace CodeIsle
             }
         }
         // Helper to write 8bit.
-        private void Write8(byte value, BinaryWriter writer)
+        private void Write8(byte value, Stream stream)
         {
-            writer.Write(value);
+            stream.WriteByte(value);
         }
         // Helper to write 16bit.
-        private void Write16(int value, BinaryWriter writer)
+        private void Write16(int value, Stream stream)
         {
-            Write8((byte)(value >> 8), writer);
-            Write8((byte)(value), writer);
+            Write8((byte)(value >> 8), stream);
+            Write8((byte)(value), stream);
         }
         // Helper to write 24bit.
-        private void Write24(int value, BinaryWriter writer)
+        private void Write24(int value, Stream stream)
         {
-            Write8((byte)(value >> 16), writer);
-            Write8((byte)(value >> 8), writer);
-            Write8((byte)(value), writer);
+            Write8((byte)(value >> 16), stream);
+            Write8((byte)(value >> 8), stream);
+            Write8((byte)(value), stream);
         }
 
         // Helper to Compare two BinaryReaders with a starting point and a count of elements.
-        private bool Compare(BinaryReader source, int sourceStart, BinaryReader target, int targetStart, int count)
+        private bool Compare(Stream source, int sourceStart, Stream target, int targetStart, int count)
         {
-            source.BaseStream.Seek(sourceStart, SeekOrigin.Begin);
-            byte[] sourceData = source.ReadBytes(count);
+            source.Seek(sourceStart, SeekOrigin.Begin);
+            byte[] sourceData = new byte[count];
+            source.Read(sourceData, 0, count);
 
-            target.BaseStream.Seek(targetStart, SeekOrigin.Begin);
-            byte[] targetData = target.ReadBytes(count);
+            target.Seek(targetStart, SeekOrigin.Begin);
+            byte[] targetData = new byte[count];
+            target.Read(targetData, 0, count);
 
             for (int i = 0; i < count; i++)
             {
