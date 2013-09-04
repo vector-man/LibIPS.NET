@@ -35,15 +35,16 @@ namespace CodeIsle
             public long OutlenMax;
             public long OutlenMinMem;
         };
-        public IpsError Study(Stream patch, IpsStudy study)
+        public IpsStudy Study(Stream patch)
         {
+            IpsStudy study = new IpsStudy();
             study.Error = IpsError.IpsInvalid;
-            if (patch.Length < 8) return IpsError.IpsInvalid;
+            if (patch.Length < 8) throw new Exceptions.IpsInvalidException();
 
             using (var patchReader = new BinaryReader(patch))
             {
                 // If 'PATCH' text was not found, return IPS was invalid error.
-                if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) return IpsError.IpsInvalid;
+                if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) throw new Exceptions.IpsInvalidException();
 
                 int offset = Read24(patchReader);
                 int outlen = 0;
@@ -69,7 +70,7 @@ namespace CodeIsle
                     if (offset < lastoffset) w_scrambled = true;
                     lastoffset = offset;
                     if (thisout > outlen) outlen = thisout;
-                    if (patch.Position >= patch.Length) return IpsError.IpsInvalid;
+                    if (patch.Position >= patch.Length) throw new Exceptions.IpsInvalidException();
 
                     offset = Read24(patchReader);
 
@@ -88,20 +89,19 @@ namespace CodeIsle
                     }
 
                 }
-                if (patch.Position != patch.Length) return IpsError.IpsInvalid;
+                if (patch.Position != patch.Length) throw new Exceptions.IpsInvalidException();
 
                 study.Error = IpsError.IpsOk;
                 if (w_notthis) study.Error = IpsError.IpsNotThis;
                 if (w_scrambled) study.Error = IpsError.IpsScrambled;
-                return study.Error;
-
             }
+            return study;
 
         }
-        public IpsError ApplyStudy(Stream patch, IpsStudy study, Stream source, Stream target)
+        public void ApplyStudy(Stream patch, IpsStudy study, Stream source, Stream target)
         {
             source.CopyTo(target);
-            if (study.Error == IpsError.IpsInvalid) return study.Error;
+            if (study.Error == IpsError.IpsInvalid) throw new Exceptions.IpsInvalidException();
             int outlen = (int)Clamp(study.OutlenMin, target.Length, study.OutlenMax);
 
             using (BinaryReader patchReader = new BinaryReader(patch))
@@ -131,8 +131,7 @@ namespace CodeIsle
                     offset = Read24(patchReader);
                 }
             }
-            if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) study.Error = IpsError.IpsNotThis; // Truncate data without this being needed is a poor idea.
-            return study.Error;
+            if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
         }
 
         // Known situations where this function does not generate an optimal patch:
@@ -169,11 +168,11 @@ namespace CodeIsle
         /// <param name="target">The target file that contains the modified data.</param>
         /// <param name="patch">The patch file to contain the resulting patch data.</param>
         /// <returns></returns>
-        public IpsError Create(string source, string target, string patch)
+        public void Create(string source, string target, string patch)
         {
             using (FileStream sourceStream = new FileStream(source, FileMode.Open), targetStream = new FileStream(target, FileMode.Open), patchStream = new FileStream(patch, FileMode.Create))
             {
-                return Create(sourceStream, targetStream, patchStream);
+                Create(sourceStream, targetStream, patchStream);
             }
         }
         /// <summary>
@@ -183,9 +182,9 @@ namespace CodeIsle
         /// <param name="target">The target stream that contains the modified data.</param>
         /// <param name="patch">The patch file stream to contain the resulting patch data.</param>
         /// <returns></returns>
-        public IpsError Create(FileStream source, FileStream target, FileStream patch)
+        public void Create(FileStream source, FileStream target, FileStream patch)
         {
-            return Create(source, target, patch);
+            Create(source, target, patch);
         }
         /// <summary>
         /// Creates an IPS patch stream from a source stream and a target stream.
@@ -194,7 +193,7 @@ namespace CodeIsle
         /// <param name="target">The target stream that contains the modified data.</param>
         /// <param name="patch">The patch stream to contain the resulting patch data.</param>
         /// <returns></returns>
-        public IpsError Create(Stream source, Stream target, ref Stream patch)
+        public void Create(Stream source, Stream target, ref Stream patch)
         {
             long sourcelen = source.Length;
             long targetlen = target.Length;
@@ -356,10 +355,8 @@ namespace CodeIsle
 
                 if (sourcelen > targetlen) Write24((int)targetlen, patchWriter);
 
-                if (sixteenmegabytes) return IpsError.Ips16MB;
-                if (patchWriter.BaseStream.Length == 8) return IpsError.IpsIdentical;
-                return IpsError.IpsOk;
-
+                if (sixteenmegabytes) throw new Exceptions.Ips16MBException(); ;
+                if (patchWriter.BaseStream.Length == 8) throw new Exceptions.IpsIdenticalException();
             }
 
         }
