@@ -59,8 +59,8 @@ namespace CodeIsle
 
                     if (size == 0)
                     {
-                        thisout = offset + patchReader.ReadInt16();
-                        patchReader.ReadByte();
+                        thisout = offset + Read16(patchReader);
+                        Read8(patchReader);
                     }
                     else
                     {
