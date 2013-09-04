@@ -44,7 +44,7 @@ namespace CodeIsle
             using (var patchReader = new BinaryReader(patch))
             {
                 // If 'PATCH' text was not found, return IPS was invalid error.
-                if (!patchReader.ReadChars(PatchText.Length).ToString().Equals(PatchText)) throw new Exceptions.IpsInvalidException();
+                if (!new string(patchReader.ReadChars(PatchText.Length)).Equals(PatchText)) throw new Exceptions.IpsInvalidException();
 
                 int offset = Read24(patchReader);
                 int outlen = 0;
