@@ -40,13 +40,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Creator.cs" />
     <Compile Include="Exceptions\Ips16MBException.cs" />
     <Compile Include="Exceptions\IpsIdenticalException.cs" />
     <Compile Include="Exceptions\IpsInvalidException.cs" />
     <Compile Include="Exceptions\IpsNotThisException.cs" />
     <Compile Include="Exceptions\IpsScrambledException.cs" />
     <Compile Include="LibIpsNet.cs" />
+    <Compile Include="Patcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Studier.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
