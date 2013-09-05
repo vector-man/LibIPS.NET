@@ -39,12 +39,12 @@ namespace CodeIsle
         {
             IpsStudy study = new IpsStudy();
             study.Error = IpsError.IpsInvalid;
-            if (patch.Length < 8) throw new Exceptions.IpsInvalidException();
+            if (patch.Length < 8) return study;
 
             // If 'PATCH' text was not found, return IPS was invalid error.
             byte[] header = new byte[PatchText.Length];
             patch.Read(header, 0, PatchText.Length);
-            if (!Enumerable.SequenceEqual(header, System.Text.Encoding.ASCII.GetBytes(PatchText))) throw new Exceptions.IpsInvalidException();
+            if (!Enumerable.SequenceEqual(header, System.Text.Encoding.ASCII.GetBytes(PatchText))) return study;
 
             int offset = Read24(patch);
             int outlen = 0;
@@ -71,7 +71,7 @@ namespace CodeIsle
                 if (offset < lastoffset) w_scrambled = true;
                 lastoffset = offset;
                 if (thisout > outlen) outlen = thisout;
-                if (patch.Position >= patch.Length) throw new Exceptions.IpsInvalidException();
+                if (patch.Position >= patch.Length) return study;
 
                 offset = Read24(patch);
 
@@ -90,7 +90,7 @@ namespace CodeIsle
                 }
 
             }
-            if (patch.Position != patch.Length) throw new Exceptions.IpsInvalidException();
+            if (patch.Position != patch.Length) return study;
 
             study.Error = IpsError.IpsOk;
             if (w_notthis) study.Error = IpsError.IpsNotThis;
