@@ -104,7 +104,7 @@ namespace CodeIsle
 
             }
             if (patch.Position != patch.Length) return study;
-
+            study.OutlenMin = outlen;
             study.Error = IpsError.IpsOk;
             if (w_notthis) study.Error = IpsError.IpsNotThis;
             if (w_scrambled) study.Error = IpsError.IpsScrambled;
