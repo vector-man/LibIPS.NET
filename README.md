@@ -9,7 +9,7 @@ It is based on the source code of 'flips' that was originally created by Alcaro.
 License
 =======
 Copyright (c) 2013 CodeIsle.com.  
-Copyright (c) 2012 Alcro.  
+Copyright (c) 2012 Alcaro.  
   
   
 LibIPS.NET is licensed under the GNU Lesser General Public License, version 3.0 or higher.
