@@ -8,6 +8,9 @@ namespace CodeIsle
 {
     class Patcher
     {
+        public const string PatchText = "PATCH";
+        public const int EndOfFile = 0x454F46;
+
         public void PatchStudy(Stream patch, Studier.IpsStudy study, Stream source, Stream target)
         {
             source.CopyTo(target);
@@ -19,7 +22,7 @@ namespace CodeIsle
             // Skip PATCH text.
             patch.Seek(5, SeekOrigin.Begin);
             int offset = Reader.Read24(patch);
-            while (offset != Studier.EndOfFile)
+            while (offset != EndOfFile)
             {
                 int size = Reader.Read16(patch);
 

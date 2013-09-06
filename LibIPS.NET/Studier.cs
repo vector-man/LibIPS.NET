@@ -8,8 +8,6 @@ namespace CodeIsle
 {
     class Studier
     {
-        public const string PatchText = "PATCH";
-        public const int EndOfFile = 0x454F46;
         public enum IpsError
         {
             // Patch applied or created successfully.
@@ -41,9 +39,9 @@ namespace CodeIsle
             if (patch.Length < 8) return study;
 
             // If 'PATCH' text was not found, return IPS was invalid error.
-            byte[] header = new byte[PatchText.Length];
-            patch.Read(header, 0, PatchText.Length);
-            if (!Enumerable.SequenceEqual(header, System.Text.Encoding.ASCII.GetBytes(PatchText))) return study;
+            byte[] header = new byte[Patcher.PatchText.Length];
+            patch.Read(header, 0, Patcher.PatchText.Length);
+            if (!Enumerable.SequenceEqual(header, System.Text.Encoding.ASCII.GetBytes(Patcher.PatchText))) return study;
 
             int offset = Reader.Read24(patch);
             int outlen = 0;
@@ -52,7 +50,7 @@ namespace CodeIsle
             bool w_scrambled = false;
             bool w_notthis = false;
 
-            while (offset != EndOfFile)
+            while (offset != Patcher.EndOfFile)
             {
                 int size = Reader.Read16(patch);
 

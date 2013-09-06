@@ -121,7 +121,7 @@ namespace CodeIsle
                     }
 
                     // Avoid premature EOF.
-                    if (offset == Studier.EndOfFile)
+                    if (offset == Patcher.EndOfFile)
                     {
                         offset--;
                         thislen++;
