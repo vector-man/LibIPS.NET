@@ -68,7 +68,7 @@ namespace CodeIsle
         /// <param name="target">The target stream that contains the modified data.</param>
         /// <param name="patch">The patch stream to contain the resulting patch data.</param>
         /// <returns></returns>
-        public void Create(Stream source, Stream target, ref Stream patch)
+        public void Create(Stream source, Stream target, Stream patch)
         {
             long sourcelen = source.Length;
             long targetlen = target.Length;
