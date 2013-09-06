@@ -49,7 +49,6 @@
     <Compile Include="Patcher.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Studier.cs" />
-    <Compile Include="Utils\MathHelper.cs" />
     <Compile Include="Utils\Reader.cs" />
     <Compile Include="Utils\Writer.cs" />
   </ItemGroup>

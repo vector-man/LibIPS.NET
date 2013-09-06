@@ -15,7 +15,7 @@ namespace CodeIsle
         {
             source.CopyTo(target);
             if (study.Error == Studier.IpsError.IpsInvalid) throw new Exceptions.IpsInvalidException();
-            int outlen = (int)MathHelper.Clamp(study.OutlenMin, target.Length, study.OutlenMax);
+            int outlen = (int)Clamp(study.OutlenMin, target.Length, study.OutlenMax);
             // Set target file length to new size.
             target.SetLength(outlen);
 
@@ -51,6 +51,10 @@ namespace CodeIsle
             Studier studier = new Studier();
             Studier.IpsStudy study = studier.Study(patch);
             PatchStudy(patch, study, source, target);
+        }
+        public static long Clamp(long value, long minimum, long maximum)
+        {
+            return (value < minimum) ? minimum : (value > maximum) ? maximum : value;
         }
     }
 }
