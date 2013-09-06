@@ -8,7 +8,7 @@ namespace CodeIsle
 {
     class Patcher
     {
-        public void ApplyStudy(Stream patch, Studier.IpsStudy study, Stream source, Stream target)
+        public void PatchStudy(Stream patch, Studier.IpsStudy study, Stream source, Stream target)
         {
             source.CopyTo(target);
             if (study.Error == Studier.IpsError.IpsInvalid) throw new Exceptions.IpsInvalidException();
@@ -43,11 +43,11 @@ namespace CodeIsle
             }
             if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
         }
-        public void Apply(Stream patch, Stream source, Stream target)
+        public void Patch(Stream patch, Stream source, Stream target)
         {
             Studier studier = new Studier();
             Studier.IpsStudy study = studier.Study(patch);
-            ApplyStudy(patch, study, source, target);
+            PatchStudy(patch, study, source, target);
         }
     }
 }
