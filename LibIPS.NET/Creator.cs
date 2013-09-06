@@ -59,7 +59,7 @@ namespace CodeIsle
         /// <returns></returns>
         public void Create(FileStream source, FileStream target, FileStream patch)
         {
-            Create(source, target, patch);
+            Create((Stream)source, (Stream)target, (Stream)patch);
         }
         /// <summary>
         /// Creates an IPS patch stream from a source stream and a target stream.
