@@ -32,20 +32,13 @@ namespace CodeIsle
             public long OutlenMax;
             public long OutlenMinMem;
         };
-        public IpsStudy Study(MemoryStream patch)
-        {
-            return Study((Stream)patch);
-        }
+
         public IpsStudy Study(string patch)
         {
             using(FileStream patchStream = File.OpenRead(patch))
             {
                 return Study(patchStream);
             }
-        }
-        public IpsStudy Study(FileStream patch)
-        {
-            return Study((Stream)patch);
         }
 
         public IpsStudy Study(Stream patch)

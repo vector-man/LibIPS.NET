@@ -36,11 +36,6 @@ namespace CodeIsle
 
         // There are no known cases where LIPS wins over libips.
 
-        public void Create(MemoryStream source, MemoryStream target, MemoryStream patch)
-        {
-            Create((Stream)source, (Stream)target, (Stream)patch);
-        }
-
         /// <summary>
         /// Creates an IPS patch file from a source file path and a target file path.
         /// </summary>
@@ -54,17 +49,6 @@ namespace CodeIsle
             {
                 Create(sourceStream, targetStream, patchStream);
             }
-        }
-        /// <summary>
-        /// Creates an IPS patch file stream from a source file stream and a target file stream.
-        /// </summary>
-        /// <param name="source">The source stream that contains the original data.</param>
-        /// <param name="target">The target stream that contains the modified data.</param>
-        /// <param name="patch">The patch file stream to contain the resulting patch data.</param>
-        /// <returns></returns>
-        public void Create(FileStream source, FileStream target, FileStream patch)
-        {
-            Create((Stream)source, (Stream)target, (Stream)patch);
         }
         /// <summary>
         /// Creates an IPS patch stream from a source stream and a target stream.

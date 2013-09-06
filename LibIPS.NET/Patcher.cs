@@ -11,10 +11,6 @@ namespace CodeIsle
         public const string PatchText = "PATCH";
         public const int EndOfFile = 0x454F46;
 
-        public void PatchStudy(MemoryStream patch, Studier.IpsStudy study, MemoryStream source, MemoryStream target)
-        {
-            PatchStudy((Stream)patch, study, (Stream)source, (Stream)target);
-        }
         public void PatchStudy(string patch, Studier.IpsStudy study, string source, string target)
         {
             using (FileStream patchStream = File.OpenRead(patch), sourceStream = File.OpenRead(source), targetStream = File.Open(target, FileMode.Create))
@@ -22,10 +18,7 @@ namespace CodeIsle
                 PatchStudy(patchStream, study, sourceStream, targetStream);
             }
         }
-        public void PatchStudy(FileStream patch, Studier.IpsStudy study, FileStream source, FileStream target)
-        {
-            PatchStudy((Stream)patch, study, (Stream)source, (Stream)target);
-        }
+
         public void PatchStudy(Stream patch, Studier.IpsStudy study, Stream source, Stream target)
         {
             source.CopyTo(target);
@@ -61,10 +54,7 @@ namespace CodeIsle
             }
             if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
         }
-        public void Patch(MemoryStream patch, MemoryStream source, MemoryStream target)
-        {
-            Patch((Stream)patch, (Stream)source, (Stream)target);
-        }
+
         public void Patch(string patch, string source, string target)
         {
             using (FileStream patchStream = File.OpenRead(patch), sourceStream = File.OpenRead(source), targetStream = File.Open(target, FileMode.Create))
@@ -72,10 +62,7 @@ namespace CodeIsle
                 Patch(patchStream, sourceStream, targetStream);
             }
         }
-        public void Patch(FileStream patch, FileStream source, FileStream target)
-        {
-            Patch((Stream)patch, (Stream)source, (Stream)target);
-        }
+
         public void Patch(Stream patch, Stream source, Stream target)
         {
             Studier studier = new Studier();
