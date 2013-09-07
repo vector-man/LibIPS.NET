@@ -30,6 +30,7 @@ namespace CodeIsle
             public IpsError Error;
             public long OutlenMin;
             public long OutlenMax;
+            // TODO: This is not really used in my version. May just remove it...
             public long OutlenMinMem;
         };
 
