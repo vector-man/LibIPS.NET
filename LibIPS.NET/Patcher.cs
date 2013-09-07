@@ -23,7 +23,7 @@ namespace CodeIsle.LibIpsNet
         {
             source.CopyTo(target);
             if (study.Error == Studier.IpsError.IpsInvalid) throw new Exceptions.IpsInvalidException();
-            int outlen = (int)Clamp(study.OutlenMin, target.Length, study.OutlenMax);
+            int outlen = (int)Clamp(target.Length, study.OutlenMin, study.OutlenMax);
             // Set target file length to new size.
             target.SetLength(outlen);
 
