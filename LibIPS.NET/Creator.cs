@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using CodeIsle.Utils;
+using CodeIsle.LibIpsNet.Utils;
 using System.IO;
-namespace CodeIsle
+namespace CodeIsle.LibIpsNet
 {
     class Creator
     {

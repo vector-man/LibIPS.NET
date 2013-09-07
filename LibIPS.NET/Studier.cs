@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.IO;
-using CodeIsle.Utils;
-namespace CodeIsle
+using CodeIsle.LibIpsNet.Utils;
+namespace CodeIsle.LibIpsNet
 {
     class Studier
     {

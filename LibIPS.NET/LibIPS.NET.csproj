@@ -7,7 +7,7 @@
     <ProjectGuid>{B997EAB5-FD05-4B98-9663-C9FE2D822150}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CodeIsle</RootNamespace>
+    <RootNamespace>CodeIsle.LibIpsNet</RootNamespace>
     <AssemblyName>LibIPS.NET</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
