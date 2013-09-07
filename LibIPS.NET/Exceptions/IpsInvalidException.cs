@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CodeIsle.LibIpsNet.Exceptions
 {
-    class IpsInvalidException: ApplicationException
+    public class IpsInvalidException : ApplicationException
     {
     }
 }

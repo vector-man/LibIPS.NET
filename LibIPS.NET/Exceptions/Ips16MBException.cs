@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CodeIsle.LibIpsNet.Exceptions
 {
-    class Ips16MBException: ApplicationException
+    public class Ips16MBException: ApplicationException
     {
 
     }

@@ -6,7 +6,7 @@ using System.IO;
 using CodeIsle.LibIpsNet.Utils;
 namespace CodeIsle.LibIpsNet
 {
-    class Studier
+    public class Studier
     {
         public enum IpsError
         {

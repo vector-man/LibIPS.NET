@@ -6,7 +6,7 @@ using CodeIsle.LibIpsNet.Utils;
 using System.IO;
 namespace CodeIsle.LibIpsNet
 {
-    class Creator
+    public class Creator
     {
 
         // Known situations where this function does not generate an optimal patch:

@@ -6,7 +6,7 @@ using System.IO;
 using CodeIsle.LibIpsNet.Utils;
 namespace CodeIsle.LibIpsNet
 {
-    class Patcher
+    public class Patcher
     {
         public const string PatchText = "PATCH";
         public const int EndOfFile = 0x454F46;
