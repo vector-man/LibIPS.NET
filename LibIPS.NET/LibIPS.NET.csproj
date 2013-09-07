@@ -41,7 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Creator.cs" />
-    <Compile Include="Exceptions\Ips16MBException.cs" />
+    <Compile Include="Exceptions\Ips16MegabytesException.cs" />
     <Compile Include="Exceptions\IpsIdenticalException.cs" />
     <Compile Include="Exceptions\IpsInvalidException.cs" />
     <Compile Include="Exceptions\IpsNotThisException.cs" />

@@ -216,7 +216,7 @@ namespace CodeIsle.LibIpsNet
 
                 if (sourcelen > targetlen) Writer.Write24((int)targetlen, patch);
 
-                if (sixteenmegabytes) throw new Exceptions.Ips16MBException(); ;
+                if (sixteenmegabytes) throw new Exceptions.Ips16MegabytesException(); ;
                 if (patch.Length == 8) throw new Exceptions.IpsIdenticalException();
             }
 
