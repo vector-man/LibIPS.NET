@@ -22,6 +22,7 @@ namespace CodeIsle.LibIpsNet
         public void PatchStudy(Stream patch, Studier.IpsStudy study, Stream source, Stream target)
         {
             source.CopyTo(target);
+            long sourceLength = source.Length;
             if (study.Error == Studier.IpsError.IpsInvalid) throw new Exceptions.IpsInvalidException();
             int outlen = (int)Clamp(target.Length, study.OutlenMin, study.OutlenMax);
             // Set target file length to new size.
@@ -52,12 +53,12 @@ namespace CodeIsle.LibIpsNet
                 }
                 offset = Reader.Read24(patch);
             }
-            if (study.OutlenMax != 0xFFFFFFFF && source.Length <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
+            if (study.OutlenMax != 0xFFFFFFFF && sourceLength <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
         }
 
         public void Patch(string patch, string source, string target)
         {
-            using (FileStream patchStream = File.OpenRead(patch), sourceStream = File.OpenRead(source), targetStream = File.Open(target, FileMode.Create))
+            using (FileStream patchStream = File.Open(patch, FileMode.Open, FileAccess.Read, FileShare.None), sourceStream = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), targetStream = File.Open(target, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
             {
                 Patch(patchStream, sourceStream, targetStream);
             }
