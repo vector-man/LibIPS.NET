@@ -8,7 +8,7 @@ It is based on the source code of 'flips' that was originally created by Alcaro.
 
 License
 =======
-Copyright (c) 2013 CodeIsle.com.  
+Copyright (c) 2013 CodeIsle.com (http://www.codeisle.com.)  
 Copyright (c) 2012 Alcaro.  
   
   
