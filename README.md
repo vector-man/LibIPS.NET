@@ -2,9 +2,10 @@ LibIPS.NET
 ==========
 
 LibIPS.NET is a .NET implementation of 'libips', a library for 'International Patching System' (IPS) patches.   
-  
-  
-It is based on the source code of 'flips,' that was originally written in C++ and created by Alcaro. You can read more about his version on this forum: http://www.smwcentral.net/?p=viewthread&t=61289
+ 
+It is based on the source code of Floating IPS, that was originally written in C++ and created by Alcaro. You can locate his project here: https://github.com/Alcaro/Flips 
+
+NOTE: the code for LibIPS.NET is based on the LGPL v3 version of Floating IPS. Alcaro has changed the license for Floating IPS to GPL v3.
 
 License
 =======
