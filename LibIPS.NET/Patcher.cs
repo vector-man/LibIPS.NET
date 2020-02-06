@@ -10,7 +10,13 @@ namespace CodeIsle.LibIpsNet
     {
         public const string PatchText = "PATCH";
         public const int EndOfFile = 0x454F46;
-
+        /// <summary>
+        /// Studies and patches a file.
+        /// </summary>
+        /// <param name="patch">The patch file to study.</param>
+        /// <param name="study">The study struct to use for patching.</param>
+        /// <param name="source">The unpatched source file.</param>
+        /// <param name="target">The target file to copy the source file to, but with the patch applied.</param>
         public void PatchStudy(string patch, Studier.IpsStudy study, string source, string target)
         {
             using (FileStream patchStream = File.OpenRead(patch), sourceStream = File.OpenRead(source), targetStream = File.Open(target, FileMode.Create))
@@ -18,7 +24,13 @@ namespace CodeIsle.LibIpsNet
                 PatchStudy(patchStream, study, sourceStream, targetStream);
             }
         }
-
+        /// <summary>
+        /// Studies and patches a stream.
+        /// </summary>
+        /// <param name="patch">The patch stream to study.</param>
+        /// <param name="study">The study struct to use for patching.</param>
+        /// <param name="source">The unpatched source stream.</param>
+        /// <param name="target">The target stream to copy the source stream to, but with the patch applied.</param>
         public void PatchStudy(Stream patch, Studier.IpsStudy study, Stream source, Stream target)
         {
             source.CopyTo(target);
@@ -55,7 +67,12 @@ namespace CodeIsle.LibIpsNet
             }
             if (study.OutlenMax != 0xFFFFFFFF && sourceLength <= study.OutlenMax) throw new Exceptions.IpsNotThisException(); // Truncate data without this being needed is a poor idea.
         }
-
+        /// <summary>
+        /// Patches a file.
+        /// </summary>
+        /// <param name="patch">The patch file.</param>
+        /// <param name="source">The unpatched source file.</param>
+        /// <param name="target">The target file to copy the source file to, but with the patch applied.</param>
         public void Patch(string patch, string source, string target)
         {
             using (FileStream patchStream = File.Open(patch, FileMode.Open, FileAccess.Read, FileShare.None), sourceStream = File.Open(source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite), targetStream = File.Open(target, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite))
@@ -63,7 +80,12 @@ namespace CodeIsle.LibIpsNet
                 Patch(patchStream, sourceStream, targetStream);
             }
         }
-
+        /// <summary>
+        /// Patches a stream.
+        /// </summary>
+        /// <param name="patch">The patch stream.</param>
+        /// <param name="source">The unpatched source stream.</param>
+        /// <param name="target">The target stream to write the source stream to, but with the patch applied.</param>
         public void Patch(Stream patch, Stream source, Stream target)
         {
             Studier studier = new Studier();
