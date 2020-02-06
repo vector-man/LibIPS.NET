@@ -40,8 +40,9 @@ namespace CodeIsle.LibIpsNet
                 // If RLE patch.
                 if (size == 0)
                 {
-                    size = Reader.Read16(patch);
-                    target.Write(Enumerable.Repeat<byte>(Reader.Read8(patch), offset).ToArray(), 0, offset);
+                    int runLength = Reader.Read16(patch);
+                    byte value = Reader.Read8(patch);
+                    target.Write(Enumerable.Repeat(value, runLength).ToArray(), 0, runLength);
                 }
                 // If normal patch.
                 else
