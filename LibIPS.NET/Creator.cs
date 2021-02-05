@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using CodeIsle.LibIpsNet.Utils;
 using System.IO;
+
 namespace CodeIsle.LibIpsNet
 {
     public class Creator
     {
-
         // Known situations where this function does not generate an optimal patch:
         // In:  80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80
         // Out: FF FF FF FF FF FF FF FF 00 01 02 03 04 05 06 07 FF FF FF FF FF FF FF FF
@@ -16,7 +16,6 @@ namespace CodeIsle.LibIpsNet
         // Possible improvement: RLE across the entire file, copy on top of that.
         // Rationale: It would be a huge pain to create such a multi-pass tool if it should support writing a byte
         // more than twice, and I don't like half-assing stuff.
-
 
         // Known improvements over LIPS:
         // In:  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
@@ -50,6 +49,7 @@ namespace CodeIsle.LibIpsNet
                 Create(sourceStream, targetStream, patchStream);
             }
         }
+
         /// <summary>
         /// Creates an IPS patch stream from a source stream and a target stream.
         /// </summary>
@@ -63,7 +63,6 @@ namespace CodeIsle.LibIpsNet
             long targetlen = target.Length;
 
             bool sixteenmegabytes = false;
-
 
             if (sourcelen > 16777216)
             {
@@ -79,7 +78,6 @@ namespace CodeIsle.LibIpsNet
             int offset = 0;
 
             {
-
                 Writer.Write8((byte)'P', patch);
                 Writer.Write8((byte)'A', patch);
                 Writer.Write8((byte)'T', patch);
@@ -126,7 +124,6 @@ namespace CodeIsle.LibIpsNet
 
                     for (byteshere = 0; byteshere < thislen && Reader.Read8(target, offset) == Reader.Read8(target, (offset + byteshere)); byteshere++) { }
 
-
                     if (byteshere == thislen)
                     {
                         int thisbyte = Reader.Read8(target, offset);
@@ -144,7 +141,6 @@ namespace CodeIsle.LibIpsNet
                             }
                             i++;
                         }
-
                     }
                     if ((byteshere > 8 - 5 && byteshere == thislen) || byteshere > 8)
                     {
@@ -168,25 +164,27 @@ namespace CodeIsle.LibIpsNet
                                 stopat += byteshere;
                                 byteshere = 0;
                             }
+
                             // RLE-worthy despite two IPS headers.
                             if (byteshere > 8 + 5 ||
-                                // RLE-worthy at end of data.
+
+                                    // RLE-worthy at end of data.
                                     (byteshere > 8 && stopat + byteshere == thislen) ||
                                     (byteshere > 8 && Compare(target, (offset + stopat + byteshere), target, (offset + stopat + byteshere + 1), 9 - 1)))//rle-worthy before another rle-worthy
                             {
                                 if (stopat != 0) thislen = stopat;
+
                                 // We don't scan the entire block if we know we'll want to RLE, that'd gain nothing.
                                 break;
                             }
                         }
-
 
                         // Don't write unchanged bytes at the end of a block if we want to RLE the next couple of bytes.
                         if (offset + thislen != targetlen)
                         {
                             while (offset + thislen - 1 < sourcelen && Reader.Read8(target, (offset + thislen - 1)) == (offset + thislen - 1 < sourcelen ? Reader.Read8(source, (offset + thislen - 1)) : 0)) thislen--;
                         }
-                        if (thislen > 3 && Compare(target, offset, target, (offset + 1), (thislen - 2)))
+                        if (thislen > 3 && Compare(target, offset, target, (offset + 1), (thislen - 1)))
                         {
                             Writer.Write24(offset, patch);
                             Writer.Write16(0, patch);
@@ -204,11 +202,8 @@ namespace CodeIsle.LibIpsNet
                             }
                         }
                         offset += thislen;
-
                     }
                 }
-
-
 
                 Writer.Write8((byte)'E', patch);
                 Writer.Write8((byte)'O', patch);
@@ -219,9 +214,7 @@ namespace CodeIsle.LibIpsNet
                 if (sixteenmegabytes) throw new Exceptions.Ips16MegabytesException(); ;
                 if (patch.Length == 8) throw new Exceptions.IpsIdenticalException();
             }
-
         }
-
 
         // Helper to Compare two BinaryReaders with a starting point and a count of elements.
         private bool Compare(Stream source, int sourceStart, Stream target, int targetStart, int count)
