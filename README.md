@@ -9,7 +9,7 @@ NOTE: the code for LibIPS.NET is based on the LGPL v3 version of Floating IPS. A
 
 License
 =======
-Copyright (c) 2013 - 2017 CodeIsle.com, http://www.codeisle.com  
+Copyright (c) 2013 - 2021 CodeIsle.com, http://www.codeisle.com  
 Copyright (c) 2012 Alcaro.  
   
   
